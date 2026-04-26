@@ -1,0 +1,204 @@
+// CRM Core Service Prisma Schema
+// Database: crm_core_db
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/crm-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CRM_DATABASE_URL")
+}
+
+// ─── Contacts ─────────────────────────────────────────────────
+model Contact {
+  id           String        @id @default(uuid())
+  tenantId     String        @map("tenant_id")
+  assignedTo   String?       @map("assigned_to")  // Staff user ID
+  firstName    String        @map("first_name")
+  lastName     String        @map("last_name")
+  email        String?
+  phone        String?
+  whatsapp     String?
+  companyId    String?       @map("company_id")
+  tags         String[]      @default([])
+  source       String?       // website, social, referral, etc.
+  status       ContactStatus @default(LEAD)
+  customFields Json          @default("{}") @map("custom_fields")
+  notes        String?
+  avatarUrl    String?       @map("avatar_url")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  company    Company?    @relation(fields: [companyId], references: [id])
+  deals      Deal[]
+  activities Activity[]
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("contacts")
+}
+
+// ─── Companies ────────────────────────────────────────────────
+model Company {
+  id       String    @id @default(uuid())
+  tenantId String    @map("tenant_id")
+  name     String
+  website  String?
+  industry String?
+  phone    String?
+  email    String?
+  address  String?
+  logoUrl  String?   @map("logo_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  contacts Contact[]
+
+  @@index([tenantId])
+  @@map("companies")
+}
+
+// ─── Pipeline & Stages ────────────────────────────────────────
+model Pipeline {
+  id       String  @id @default(uuid())
+  tenantId String  @map("tenant_id")
+  name     String
+  isDefault Boolean @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  stages PipelineStage[]
+  deals  Deal[]
+
+  @@index([tenantId])
+  @@map("pipelines")
+}
+
+model PipelineStage {
+  id         String   @id @default(uuid())
+  pipelineId String   @map("pipeline_id")
+  name       String
+  order      Int
+  color      String   @default("#6366f1")
+  probability Float   @default(0)
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals    Deal[]
+
+  @@map("pipeline_stages")
+}
+
+// ─── Deals ────────────────────────────────────────────────────
+model Deal {
+  id          String     @id @default(uuid())
+  tenantId    String     @map("tenant_id")
+  contactId   String?    @map("contact_id")
+  pipelineId  String     @map("pipeline_id")
+  stageId     String     @map("stage_id")
+  assignedTo  String?    @map("assigned_to")
+  title       String
+  value       Float      @default(0)
+  currency    String     @default("USD")
+  status      DealStatus @default(OPEN)
+  closeDate   DateTime?  @map("close_date")
+  notes       String?
+  customFields Json      @default("{}") @map("custom_fields")
+  wonAt       DateTime?  @map("won_at")
+  lostAt      DateTime?  @map("lost_at")
+  lostReason  String?   @map("lost_reason")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  contact  Contact?      @relation(fields: [contactId], references: [id])
+  pipeline Pipeline      @relation(fields: [pipelineId], references: [id])
+  stage    PipelineStage @relation(fields: [stageId], references: [id])
+  activities Activity[]
+
+  @@index([tenantId])
+  @@index([stageId])
+  @@map("deals")
+}
+
+// ─── Activities ───────────────────────────────────────────────
+model Activity {
+  id        String       @id @default(uuid())
+  tenantId  String       @map("tenant_id")
+  contactId String?      @map("contact_id")
+  dealId    String?      @map("deal_id")
+  userId    String       @map("user_id")  // Who performed
+  type      ActivityType
+  subject   String?
+  notes     String?
+  outcome   String?
+  metadata  Json         @default("{}")
+  dueDate   DateTime?    @map("due_date")
+  completedAt DateTime?  @map("completed_at")
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  contact Contact? @relation(fields: [contactId], references: [id])
+  deal    Deal?    @relation(fields: [dealId], references: [id])
+
+  @@index([tenantId])
+  @@index([contactId])
+  @@map("activities")
+}
+
+// ─── Tasks ────────────────────────────────────────────────────
+model Task {
+  id          String     @id @default(uuid())
+  tenantId    String     @map("tenant_id")
+  assignedTo  String?    @map("assigned_to")
+  createdBy   String     @map("created_by")
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?  @map("due_date")
+  relatedTo   String?    @map("related_to")   // contact_id or deal_id
+  relatedType String?    @map("related_type") // "contact" or "deal"
+  completedAt DateTime?  @map("completed_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@index([assignedTo])
+  @@map("tasks")
+}
+
+// ─── Enums ────────────────────────────────────────────────────
+enum ContactStatus {
+  LEAD
+  PROSPECT
+  CUSTOMER
+  INACTIVE
+  LOST
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  SMS
+  WHATSAPP
+  MEETING
+  NOTE
+  TASK
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}

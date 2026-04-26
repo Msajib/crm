@@ -1,0 +1,10 @@
+{
+    "compilerOptions":  {
+                            "experimentalDecorators":  true,
+                            "outDir":  "./dist",
+                            "incremental":  true,
+                            "baseUrl":  "./",
+                            "module":  "commonjs",
+                            "declaration":  true
+                        }
+}

@@ -1,0 +1,39 @@
+// Communication Service Prisma Schema
+// Database: crm_system, Schema: communication
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/communication-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("COMMUNICATION_DATABASE_URL")
+}
+
+model EmailLog {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  from      String
+  to        String
+  subject   String
+  body      String
+  status    String   @default("SENT") // SENT, FAILED, DELIVERED
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("email_logs")
+}
+
+model CallLog {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  from      String
+  to        String
+  duration  Int      // in seconds
+  status    String   // COMPLETED, MISSED, BUSY
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("call_logs")
+}

@@ -1,0 +1,34 @@
+{
+  "name": "crm-saas-platform",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@10.8.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --concurrency 20",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "turbo run db:migrate",
+    "db:studio": "turbo run db:studio",
+    "db:init": "turbo run db:sync && npm run db:seed",
+    "db:reset": "cd apps/auth-service && npx prisma db push --force-reset && npx prisma db seed && cd ../tenant-service && npx prisma db push --accept-data-loss && cd ../crm-service && npx prisma db push --accept-data-loss",
+    "db:seed": "cd apps/auth-service && npx prisma db seed",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "prettier": "^3.4.2",
+    "@types/node": "^22.10.7"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

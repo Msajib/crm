@@ -1,0 +1,155 @@
+// Tenant Service Prisma Schema
+// Database: crm_tenant_db
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/tenant-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("TENANT_DATABASE_URL")
+}
+
+model Tenant {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  ownerId     String       @map("owner_id")   // User ID from auth service
+  planId      String       @map("plan_id")
+  status      TenantStatus @default(ACTIVE)
+  logoUrl     String?      @map("logo_url")
+  faviconUrl  String?      @map("favicon_url")
+  primaryColor String?     @map("primary_color")
+  secondaryColor String?   @map("secondary_color")
+  accentColor String?      @map("accent_color")
+  customDomain String?     @unique @map("custom_domain")
+  timezone    String       @default("UTC")
+  locale      String       @default("en")
+  settings    Json         @default("{}")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  plan             Plan             @relation(fields: [planId], references: [id])
+  socialAccounts   SocialAccount[]
+  paymentGateways  PaymentGatewayConfig[]
+  subscription     Subscription?
+
+  @@index([slug])
+  @@index([customDomain])
+  @@map("tenants")
+}
+
+model SystemSetting {
+  id           String   @id @default("global")
+  systemName   String   @default("CRM SaaS") @map("system_name")
+  logoUrl      String?  @map("logo_url")
+  faviconUrl   String?  @map("favicon_url")
+  primaryColor String   @default("#6366f1") @map("primary_color")
+  secondaryColor String @default("#4f46e5") @map("secondary_color")
+  accentColor  String   @default("#f59e0b") @map("accent_color")
+  metaDescription String? @map("meta_description")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model Plan {
+  id              String   @id @default(uuid())
+  name            String   // Starter, Growth, Business, Enterprise
+  tier            PlanTier @unique
+  price           Float
+  currency        String   @default("USD")
+  maxStaff        Int      @default(3)
+  maxContacts     Int      @default(1000)
+  maxCampaigns    Int      @default(5)
+  hasSocialBoost  Boolean  @default(false) @map("has_social_boost")
+  hasCallingFeature Boolean @default(false) @map("has_calling_feature")
+  features        String[] @default([])
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenants       Tenant[]
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id           String             @id @default(uuid())
+  tenantId     String             @unique @map("tenant_id")
+  planId       String             @map("plan_id")
+  status       SubscriptionStatus @default(ACTIVE)
+  startDate    DateTime           @map("start_date")
+  endDate      DateTime?          @map("end_date")
+  renewsAt     DateTime?          @map("renews_at")
+  cancelledAt  DateTime?          @map("cancelled_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model SocialAccount {
+  id           String         @id @default(uuid())
+  tenantId     String         @map("tenant_id")
+  platform     SocialPlatform
+  accountName  String         @map("account_name")
+  accountId    String         @map("account_id")
+  accessToken  String         @map("access_token")  // Encrypted
+  refreshToken String?        @map("refresh_token") // Encrypted
+  expiresAt    DateTime?      @map("expires_at")
+  isActive     Boolean        @default(true) @map("is_active")
+  connectedAt  DateTime       @default(now()) @map("connected_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, platform])
+  @@map("social_accounts")
+}
+
+model PaymentGatewayConfig {
+  id          String         @id @default(uuid())
+  tenantId    String         @map("tenant_id")
+  gateway     String         // STRIPE, PAYPAL, BKASH, etc.
+  credentials Json           // Encrypted JSON
+  isActive    Boolean        @default(true) @map("is_active")
+  isDefault   Boolean        @default(false) @map("is_default")
+  currencies  String[]       @default([])
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, gateway])
+  @@map("payment_gateway_configs")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  CANCELLED
+}
+
+enum PlanTier {
+  STARTER
+  GROWTH
+  BUSINESS
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum SocialPlatform {
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  MARKETPLACE
+}

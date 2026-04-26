@@ -1,0 +1,39 @@
+// AI Service Prisma Schema
+// Database: crm_system, Schema: ai
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/ai-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("AI_DATABASE_URL")
+}
+
+model AIConversation {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  messages  Json     @default("[]") // Array of {role: 'user'|'assistant', content: string}
+  context   Json     @default("{}") // Relevant metadata
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("ai_conversations")
+}
+
+model AIInsight {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  entityId  String   @map("entity_id") // Contact or Deal ID
+  type      String   // LEAD_SCORE, DEAL_ANALYSIS, FOLLOW_UP
+  content   Json     // The insight data
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@index([entityId])
+  @@map("ai_insights")
+}

@@ -1,0 +1,37 @@
+// Marketing Service Prisma Schema
+// Database: crm_system, Schema: marketing
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/marketing-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("MARKETING_DATABASE_URL")
+}
+
+model SocialAccount {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  platform     String   // FACEBOOK, TWITTER, LINKEDIN, INSTAGRAM
+  externalId   String   @map("external_id")
+  accessToken  String   @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("social_accounts")
+}
+
+model Campaign {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  type      String   // EMAIL, SOCIAL, SMS
+  status    String   // DRAFT, ACTIVE, COMPLETED
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("campaigns")
+}
