@@ -22,13 +22,18 @@ export default function LoginPage() {
       
       if (response.ok) {
         const data = await response.json();
-        // Set cookies for middleware support
+        // Set cookies for server-side middleware and server-side logout revocation
         document.cookie = `token=${data.accessToken}; path=/; max-age=86400; SameSite=Strict`;
         document.cookie = `role=${data.user.role}; path=/; max-age=86400; SameSite=Strict`;
+        if (data.refreshToken) {
+          document.cookie = `refreshToken=${data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
         
-        // Also keep in localStorage for easy frontend access if needed
+        // Also keep in localStorage for easy frontend access
         localStorage.setItem('token', data.accessToken);
         localStorage.setItem('role', data.user.role);
+        localStorage.setItem('user', JSON.stringify(data.user));
         
         toast.success('Authentication successful! Initializing workspace...');
         setTimeout(() => {
@@ -47,31 +52,24 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050505]">
-      {/* Background Image with Overlay */}
-      <div 
-        className="absolute inset-0 z-0 scale-105"
-        style={{ 
-          backgroundImage: 'url("file:///C:/Users/Elitebook/.gemini/antigravity/brain/0595d929-36b5-4f6f-8c03-8145542dbc6f/crm_login_background_1777154472641.png")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(10px) brightness(0.3)'
-        }}
-      />
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0a0a1a] to-[#1a0a2a] z-0" />
       
       {/* Animated Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[150px] animate-pulse delay-1000" />
 
       <div className="relative z-10 w-full max-w-[480px] p-4 animate-fade-in">
-        <div className="glass-premium rounded-[48px] border border-white/10 p-12 shadow-2xl backdrop-blur-3xl bg-black/40">
+        <div className="glass-premium rounded-[60px] border border-white/5 p-12 shadow-2xl backdrop-blur-3xl bg-black/40">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/20 border border-primary/30 mb-6 shadow-lg shadow-primary/20">
-              <Shield className="w-10 h-10 text-primary" />
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-[32px] bg-gradient-to-br from-primary/20 to-purple-500/20 border border-white/10 mb-8 shadow-2xl relative group overflow-hidden">
+              <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <h1 className="text-4xl font-black tracking-tight text-white mb-3">
               CRM <span className="text-primary italic">Pro</span>
             </h1>
-            <p className="text-gray-400 text-sm font-medium">Enterprise Intelligence Suite</p>
+            <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em]">Enterprise Intelligence Suite</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
@@ -109,7 +107,7 @@ export default function LoginPage() {
                 </div>
                 <span className="ml-3 text-xs font-bold text-gray-400 group-hover:text-white transition-colors uppercase tracking-widest">Keep Session</span>
               </label>
-              <Link href="/forgot-password" stroke-width="3" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest">
+              <Link href="/forgot-password" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest">
                 Forgot Key?
               </Link>
             </div>

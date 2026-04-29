@@ -32,8 +32,6 @@ model Tenant {
 
   plan             Plan             @relation(fields: [planId], references: [id])
   socialAccounts   SocialAccount[]
-  paymentGateways  PaymentGatewayConfig[]
-  subscription     Subscription?
 
   @@index([slug])
   @@index([customDomain])
@@ -70,26 +68,8 @@ model Plan {
   createdAt       DateTime @default(now()) @map("created_at")
 
   tenants       Tenant[]
-  subscriptions Subscription[]
 
   @@map("plans")
-}
-
-model Subscription {
-  id           String             @id @default(uuid())
-  tenantId     String             @unique @map("tenant_id")
-  planId       String             @map("plan_id")
-  status       SubscriptionStatus @default(ACTIVE)
-  startDate    DateTime           @map("start_date")
-  endDate      DateTime?          @map("end_date")
-  renewsAt     DateTime?          @map("renews_at")
-  cancelledAt  DateTime?          @map("cancelled_at")
-  createdAt    DateTime           @default(now()) @map("created_at")
-
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-  plan   Plan   @relation(fields: [planId], references: [id])
-
-  @@map("subscriptions")
 }
 
 model SocialAccount {
@@ -110,22 +90,6 @@ model SocialAccount {
   @@map("social_accounts")
 }
 
-model PaymentGatewayConfig {
-  id          String         @id @default(uuid())
-  tenantId    String         @map("tenant_id")
-  gateway     String         // STRIPE, PAYPAL, BKASH, etc.
-  credentials Json           // Encrypted JSON
-  isActive    Boolean        @default(true) @map("is_active")
-  isDefault   Boolean        @default(false) @map("is_default")
-  currencies  String[]       @default([])
-  createdAt   DateTime       @default(now()) @map("created_at")
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, gateway])
-  @@map("payment_gateway_configs")
-}
-
 enum TenantStatus {
   ACTIVE
   SUSPENDED
@@ -138,13 +102,6 @@ enum PlanTier {
   GROWTH
   BUSINESS
   ENTERPRISE
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  PAST_DUE
-  CANCELLED
-  EXPIRED
 }
 
 enum SocialPlatform {

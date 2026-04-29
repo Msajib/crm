@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { 
   TrendingUp, 
@@ -14,6 +14,8 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { api } from '@/lib/api';
+import ModuleGuard from '@/components/ModuleGuard';
 
 const STATS = [
   { label: 'Total Reach', value: '1.2M', trend: '+14.5%', sub: 'Last 30 days' },
@@ -23,7 +25,33 @@ const STATS = [
 ];
 
 export default function MarketingStats() {
+  return (
+    <ModuleGuard moduleId="analytics">
+      <StatsContent />
+    </ModuleGuard>
+  );
+}
+
+function StatsContent() {
   const [dateRange, setDateRange] = useState('30D');
+  const [stats, setStats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [dateRange]);
+
+  const fetchAnalytics = async () => {
+    setLoading(true);
+    try {
+      const data = await api.post('/social/sync', {});
+      setStats(data);
+    } catch (err) {
+      console.error('Failed to fetch analytics', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const exportChart = (format: 'PDF' | 'PNG') => {
     toast.promise(
@@ -36,6 +64,13 @@ export default function MarketingStats() {
     );
   };
 
+  const displayStats = stats.length > 0 ? [
+    { label: 'Total Reach', value: (stats.reduce((acc, s) => acc + (Number(s.reach) || 0), 0) / 1000000).toFixed(1) + 'M', trend: '+14.5%', sub: 'Aggregated reach' },
+    { label: 'Engagement Rate', value: (stats.reduce((acc, s) => acc + (Number(s.engagement) || 0), 0) / (stats.length || 1)).toFixed(1) + '%', trend: '+0.2%', sub: 'Avg per platform' },
+    { label: 'Ad Conversion', value: '12.3%', trend: '+3.1%', sub: 'ROAS 4.2x' },
+    { label: 'Page Boosts', value: stats.length, trend: 'Active', sub: 'Linked channels' },
+  ] : STATS;
+
   return (
     <DashboardLayout>
       <div className="animate-fade-in space-y-10 pb-20">
@@ -47,7 +82,7 @@ export default function MarketingStats() {
           <div className="flex items-center space-x-3">
              <div className="flex items-center bg-muted border border-border rounded-2xl p-1">
                 {['7D', '30D', '90D', '1Y'].map(d => (
-                  <button key={d} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateRange === d ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`} onClick={() => setDateRange(d)}>{d}</button>
+                   <button key={d} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateRange === d ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`} onClick={() => setDateRange(d)}>{d}</button>
                 ))}
              </div>
              <div className="flex items-center space-x-2">
@@ -62,7 +97,7 @@ export default function MarketingStats() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {STATS.map((stat) => (
+          {displayStats.map((stat) => (
             <div key={stat.label} className="glass-premium p-6 rounded-3xl border border-border premium-shadow">
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">{stat.label}</p>
               <div className="flex items-end justify-between">
@@ -89,17 +124,25 @@ export default function MarketingStats() {
               <div className="flex-1 flex items-center justify-center bg-muted/30 rounded-3xl border-2 border-dashed border-border group relative overflow-hidden">
                  <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                  <BarChart3 className="w-12 h-12 text-muted-foreground/20 absolute" />
-                 <p className="text-xs text-muted-foreground font-medium z-10">Real-time Visualization Engine Active</p>
+                 <p className="text-xs text-muted-foreground font-medium z-10">
+                    {loading ? 'Aggregating platform data...' : 'Real-time Visualization Engine Active'}
+                 </p>
               </div>
            </div>
 
            <div className="glass-premium p-8 rounded-[40px] border border-border flex flex-col bg-background/50">
               <h3 className="text-lg font-black text-foreground mb-8">Channel Performance</h3>
               <div className="space-y-6 flex-1">
-                 <ChannelItem name="Facebook Ads" value={65} color="bg-blue-600" />
-                 <ChannelItem name="Google Search" value={42} color="bg-emerald-500" />
-                 <ChannelItem name="Instagram Reels" value={88} color="bg-pink-600" />
-                 <ChannelItem name="Direct Email" value={28} color="bg-amber-500" />
+                 {stats.length > 0 ? stats.map((s: any) => (
+                    <ChannelItem key={s.platform} name={s.platform} value={(Number(s.engagement) || 0) * 10} color={s.platform === 'FACEBOOK' ? 'bg-blue-600' : 'bg-indigo-600'} />
+                 )) : (
+                    <>
+                      <ChannelItem name="Facebook Ads" value={65} color="bg-blue-600" />
+                      <ChannelItem name="Google Search" value={42} color="bg-emerald-500" />
+                      <ChannelItem name="Instagram Reels" value={88} color="bg-pink-600" />
+                      <ChannelItem name="Direct Email" value={28} color="bg-amber-500" />
+                    </>
+                 )}
               </div>
               <button className="mt-10 w-full py-5 bg-muted border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-accent transition-all flex items-center justify-center space-x-2">
                  <span>Full Channel Breakdown</span>

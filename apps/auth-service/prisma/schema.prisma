@@ -31,6 +31,7 @@ model User {
 
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
+  notifications Notification[]
 
   @@index([tenantId])
   @@index([email])
@@ -67,6 +68,24 @@ model AuditLog {
   @@index([tenantId])
   @@index([userId])
   @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  type      String   // SYSTEM, MENTION, ALERT, REMINDER
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
 }
 
 enum Role {

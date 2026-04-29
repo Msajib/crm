@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import ModuleGuard from '@/components/ModuleGuard';
 import { 
   Server, 
   Database, 
@@ -30,6 +31,14 @@ const MOCK_TOOLS = [
 ];
 
 export default function MCPProtocolPage() {
+  return (
+    <ModuleGuard moduleId="mcp">
+      <MCPContent />
+    </ModuleGuard>
+  );
+}
+
+function MCPContent() {
   const [serverStatus, setServerStatus] = useState('OPERATIONAL');
 
   return (

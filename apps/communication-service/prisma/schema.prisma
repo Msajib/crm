@@ -37,3 +37,80 @@ model CallLog {
   @@index([tenantId])
   @@map("call_logs")
 }
+
+model EmailConfig {
+  id        String   @id @default(uuid())
+  tenantId  String   @unique @map("tenant_id")
+  provider  String   @default("SMTP") // SMTP, SENDGRID, MAILGUN, SES
+  host      String?  // For SMTP
+  port      Int?     // For SMTP
+  user      String?  // For SMTP/API Key
+  pass      String?  // For SMTP/API Secret
+  apiKey    String?  @map("api_key") // For API based providers
+  secure    Boolean  @default(true)
+  fromEmail String   @map("from_email")
+  fromName  String   @map("from_name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("email_configs")
+}
+model Notification {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  type      String   // NEW_LEAD, SYSTEM, TASK
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("notifications")
+}
+
+model Conversation {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  platform    String    // FACEBOOK, INSTAGRAM, SMS, INTERNAL
+  externalId  String?   @map("external_id") // Sender ID
+  name        String    // Customer Name
+  lastMessage String    @map("last_message")
+  unreadCount Int       @default(0) @map("unread_count")
+  notes       String?   @db.Text
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  messages    Message[]
+
+  @@index([tenantId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  senderId       String?      @map("sender_id") // Null if from customer
+  text           String
+  isFromCustomer Boolean      @default(true) @map("is_from_customer")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model EmailTemplate {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  subject   String
+  content   String   @db.Text // HTML Content
+  design    Json?    // For the drag-and-drop builder state
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("email_templates")
+}

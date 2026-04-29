@@ -18,19 +18,57 @@ model SocialAccount {
   externalId   String   @map("external_id")
   accessToken  String   @map("access_token")
   refreshToken String?  @map("refresh_token")
+  lastSyncedAt DateTime? @map("last_synced_at")
+  syncStatus   String?  @map("sync_status") // SYNCED, FAILED, PENDING
   createdAt    DateTime @default(now()) @map("created_at")
 
   @@index([tenantId])
   @@map("social_accounts")
 }
 
+model WebhookSubscription {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  platform      String
+  externalId    String   @map("external_id") // e.g. Facebook Page ID
+  subscriptionId String? @map("subscription_id")
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([tenantId, platform, externalId])
+  @@map("webhook_subscriptions")
+}
+
+model SocialCredential {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  platform    String   // FACEBOOK, TWITTER, LINKEDIN, INSTAGRAM
+  appId       String   @map("app_id")
+  appSecret   String   @map("app_secret")
+  settings    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, platform])
+  @@index([tenantId])
+  @@map("social_credentials")
+}
+
 model Campaign {
-  id        String   @id @default(uuid())
-  tenantId  String   @map("tenant_id")
-  name      String
-  type      String   // EMAIL, SOCIAL, SMS
-  status    String   // DRAFT, ACTIVE, COMPLETED
-  createdAt DateTime @default(now()) @map("created_at")
+  id             String    @id @default(uuid())
+  tenantId       String    @map("tenant_id")
+  name           String
+  description    String?
+  type           String    // EMAIL, SOCIAL, SMS, CALL
+  status         String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
+  scheduledAt    DateTime? @map("scheduled_at")
+  templateId     String?   @map("template_id")
+  leadIds        String[]  @map("lead_ids")
+  processedCount Int       @default(0) @map("processed_count")
+  failedCount    Int       @default(0) @map("failed_count")
+  errorMessage   String?   @map("error_message")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   @@index([tenantId])
   @@map("campaigns")

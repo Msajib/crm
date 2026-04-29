@@ -18,9 +18,11 @@ model Contact {
   assignedTo   String?       @map("assigned_to")  // Staff user ID
   firstName    String        @map("first_name")
   lastName     String        @map("last_name")
+  jobTitle     String?       @map("job_title")
   email        String?
   phone        String?
   whatsapp     String?
+  address      String?
   companyId    String?       @map("company_id")
   tags         String[]      @default([])
   source       String?       // website, social, referral, etc.
@@ -101,6 +103,7 @@ model Deal {
   currency    String     @default("USD")
   status      DealStatus @default(OPEN)
   closeDate   DateTime?  @map("close_date")
+  description String?    @db.Text
   notes       String?
   customFields Json      @default("{}") @map("custom_fields")
   wonAt       DateTime?  @map("won_at")
@@ -156,6 +159,7 @@ model Task {
   dueDate     DateTime?  @map("due_date")
   relatedTo   String?    @map("related_to")   // contact_id or deal_id
   relatedType String?    @map("related_type") // "contact" or "deal"
+  checklists  Json       @default("[]")      @map("checklists")
   completedAt DateTime?  @map("completed_at")
   createdAt   DateTime   @default(now()) @map("created_at")
 

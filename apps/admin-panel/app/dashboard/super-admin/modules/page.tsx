@@ -13,30 +13,42 @@ import {
   CreditCard, 
   ShieldCheck,
   Zap,
-  Target
+  Target,
+  Users,
+  Webhook,
+  Cpu
 } from 'lucide-react';
 
 const ALL_MODULES = [
-  { id: 'tasks', name: 'Tasks Module', desc: 'Task management, Kanban boards, and team collaboration.', icon: LayoutGrid, color: 'text-blue-500 bg-blue-500/10' },
+  { id: 'contacts', name: 'Contacts & CRM', desc: 'Core contact management, segmentation and lifecycle tracking.', icon: Users, color: 'text-blue-500 bg-blue-500/10' },
   { id: 'deals', name: 'Deals & Pipeline', desc: 'Sales pipeline management and revenue forecasting.', icon: Target, color: 'text-emerald-500 bg-emerald-500/10' },
+  { id: 'tasks', name: 'Tasks & Projects', desc: 'Task management, Kanban boards, and team collaboration.', icon: LayoutGrid, color: 'text-indigo-500 bg-indigo-500/10' },
   { id: 'marketing', name: 'Marketing Hub', desc: 'Social account connections and automated campaigns.', icon: Zap, color: 'text-amber-500 bg-amber-500/10' },
-  { id: 'communication', name: 'Communication', desc: 'Centralized business calls, emails, and SMS.', icon: MessageSquare, color: 'text-indigo-500 bg-indigo-500/10' },
+  { id: 'communication', name: 'Communication', desc: 'Centralized business calls, emails, and SMS.', icon: MessageSquare, color: 'text-rose-500 bg-rose-500/10' },
   { id: 'ai', name: 'AI Sales Agent', desc: 'Predictive lead scoring and automated AI assistance.', icon: Sparkles, color: 'text-purple-500 bg-purple-500/10' },
-  { id: 'analytics', name: 'Advanced Analytics', desc: 'Deep insights and custom reporting dashboards.', icon: BarChart3, color: 'text-rose-500 bg-rose-500/10' },
-  { id: 'payments', name: 'Payment Gateways', desc: 'Stripe, PayPal and regional gateway integrations.', icon: CreditCard, color: 'text-cyan-500 bg-cyan-500/10' },
+  { id: 'analytics', name: 'Advanced Analytics', desc: 'Deep insights and custom reporting dashboards.', icon: BarChart3, color: 'text-cyan-500 bg-cyan-500/10' },
+  { id: 'payments', name: 'Payment Gateways', desc: 'Stripe, PayPal and regional gateway integrations.', icon: CreditCard, color: 'text-slate-500 bg-slate-500/10' },
+  { id: 'automations', name: 'Workflow Automations', desc: 'Advanced rule-based triggers and cross-module actions.', icon: Zap, color: 'text-yellow-500 bg-yellow-500/10' },
+  { id: 'webhooks', name: 'API Webhooks', desc: 'Real-time event notifications for external integrations.', icon: Webhook, color: 'text-orange-500 bg-orange-500/10' },
+  { id: 'mcp', name: 'MCP Integration', desc: 'Model Context Protocol server for advanced AI connectivity.', icon: Cpu, color: 'text-violet-500 bg-violet-500/10' },
 ];
 
 export default function SuperAdminModulesSettings() {
   const [loading, setLoading] = useState(false);
-  const [enabledModules, setEnabledModules] = useState<string[]>(ALL_MODULES.map(m => m.id));
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [enabledModules, setEnabledModules] = useState<string[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('global_disabled_modules');
+      const allIds = ALL_MODULES.map(m => m.id);
       if (saved) {
         const disabledIds = JSON.parse(saved);
-        setEnabledModules(ALL_MODULES.map(m => m.id).filter(id => !disabledIds.includes(id)));
+        setEnabledModules(allIds.filter(id => !disabledIds.includes(id)));
+      } else {
+        setEnabledModules(allIds);
       }
+      setIsInitialLoad(false);
     }
   }, []);
 
@@ -65,6 +77,16 @@ export default function SuperAdminModulesSettings() {
       setLoading(false);
     }
   };
+
+  if (isInitialLoad) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

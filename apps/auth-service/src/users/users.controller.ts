@@ -27,6 +27,24 @@ export class UsersController {
     return this.usersService.update(req.user.userId, req.user.tenantId, dto);
   }
 
+  @Get('me/notifications')
+  @ApiOperation({ summary: 'Get current user notifications' })
+  async getNotifications(@Request() req: any) {
+    return this.usersService.getNotifications(req.user.userId, req.user.tenantId);
+  }
+
+  @Patch('me/notifications/read-all')
+  @ApiOperation({ summary: 'Mark all notifications as read' })
+  async markAllNotificationsRead(@Request() req: any) {
+    return this.usersService.markAllNotificationsRead(req.user.userId, req.user.tenantId);
+  }
+
+  @Delete('me/notifications')
+  @ApiOperation({ summary: 'Clear all notifications' })
+  async clearAllNotifications(@Request() req: any) {
+    return this.usersService.clearAllNotifications(req.user.userId, req.user.tenantId);
+  }
+
   @Post('staff')
   @ApiOperation({ summary: 'Create a new staff member (Admin only)' })
   async createStaff(@Request() req: any, @Body() dto: CreateUserDto) {
@@ -78,5 +96,14 @@ export class UsersController {
   @ApiOperation({ summary: 'Deactivate a staff member' })
   async deactivate(@Request() req: any, @Param('id') id: string) {
     return this.usersService.deactivate(id, req.user.tenantId);
+  }
+
+  @Post('internal/notify-super-admin')
+  @ApiOperation({ summary: 'Internal: Notify all Super Admins' })
+  async internalNotify(@Body() body: { title: string; message: string; type: string }) {
+    if (!body.title || !body.message) {
+      return { success: false, error: 'Missing title or message' };
+    }
+    return this.usersService.notifySuperAdmin(body.title, body.message, body.type || 'SYSTEM');
   }
 }

@@ -129,6 +129,30 @@ export class UsersService {
     return this.sanitizeUser(updated);
   }
 
+  // ─── Notifications ─────────────────────────────────────────────
+  async getNotifications(userId: string, tenantId: string) {
+    return this.prisma.notification.findMany({
+      where: { userId, tenantId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  }
+
+  async markAllNotificationsRead(userId: string, tenantId: string) {
+    await this.prisma.notification.updateMany({
+      where: { userId, tenantId, isRead: false },
+      data: { isRead: true },
+    });
+    return { success: true };
+  }
+
+  async clearAllNotifications(userId: string, tenantId: string) {
+    await this.prisma.notification.deleteMany({
+      where: { userId, tenantId },
+    });
+    return { success: true };
+  }
+
   // ─── Update Permissions ───────────────────────────────────────
   async updatePermissions(id: string, tenantId: string, permissions: string[]) {
     const user = await this.prisma.user.findFirst({ where: { id, tenantId } });
@@ -153,6 +177,30 @@ export class UsersService {
       data: { isActive: false },
     });
     return { message: 'User deactivated successfully' };
+  }
+
+  // ─── Super Admin Notifications ────────────────────────────────
+  async notifySuperAdmin(title: string, message: string, type: string) {
+    const superAdmins = await this.prisma.user.findMany({
+      where: { role: 'SUPER_ADMIN', isActive: true },
+    });
+
+    for (const admin of superAdmins) {
+      await this.createNotification(admin.id, admin.tenantId, title, message, type);
+    }
+    return { success: true, count: superAdmins.length };
+  }
+
+  async createNotification(userId: string, tenantId: string, title: string, message: string, type: string) {
+    return this.prisma.notification.create({
+      data: {
+        userId,
+        tenantId,
+        title,
+        message,
+        type,
+      },
+    });
   }
 
   private sanitizeUser(user: any) {

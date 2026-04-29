@@ -129,20 +129,3 @@ export class ConnectSocialAccountDto {
   @IsString()
   refreshToken?: string;
 }
-
-export class PaymentGatewayConfigDto {
-  @ApiProperty({ example: 'STRIPE' })
-  @IsString()
-  gateway: string;
-
-  @ApiProperty({ description: 'Gateway credentials (API keys etc.)' })
-  credentials: Record<string, string>;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  currencies?: string[];
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  isDefault?: boolean;
-}

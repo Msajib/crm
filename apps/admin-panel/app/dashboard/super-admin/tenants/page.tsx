@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { 
   Users, 
@@ -13,43 +14,123 @@ import {
   ArrowUpRight,
   Plus,
   ShieldAlert,
-  X
+  X,
+  Trash2,
+  Edit,
+  Eye,
+  Copy,
+  History,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ActionDropdown from '@/components/ActionDropdown';
 
 const MOCK_TENANTS = [
-  { id: 1, name: 'Acme Corp', slug: 'acme', email: 'admin@acme.com', plan: 'ENTERPRISE', status: 'ACTIVE', joined: '2026-01-15' },
-  { id: 2, name: 'TechFlow', slug: 'techflow', email: 'hello@techflow.io', plan: 'PRO', status: 'ACTIVE', joined: '2026-02-10' },
-  { id: 3, name: 'Global Net', slug: 'global', email: 'info@global.net', plan: 'BASIC', status: 'PENDING', joined: '2026-04-20' },
-  { id: 4, name: 'Vertex Co', slug: 'vertex', email: 'sajib@vertex.co', plan: 'PRO', status: 'SUSPENDED', joined: '2026-03-05' },
+  { id: 1, name: 'Acme Corp', slug: 'acme', email: 'admin@acme.com', plan: 'ENTERPRISE', status: 'ACTIVE', joined: '2026-01-15', phone: '+123456789', industry: 'Tech', size: '51-200' },
+  { id: 2, name: 'TechFlow', slug: 'techflow', email: 'hello@techflow.io', plan: 'PRO', status: 'ACTIVE', joined: '2026-02-10', phone: '+987654321', industry: 'SaaS', size: '11-50' },
+  { id: 3, name: 'Global Net', slug: 'global', email: 'info@global.net', plan: 'BASIC', status: 'PENDING', joined: '2026-04-20', phone: '+112233445', industry: 'Telecom', size: '201+' },
+  { id: 4, name: 'Vertex Co', slug: 'vertex', email: 'sajib@vertex.co', plan: 'PRO', status: 'SUSPENDED', joined: '2026-03-05', phone: '+554433221', industry: 'Finance', size: '1-10' },
 ];
 
 export default function SuperAdminTenants() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [tenants, setTenants] = useState(MOCK_TENANTS);
+  const [tenants, setTenants] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState<any>(null);
+  const [showEditModal, setShowEditModal] = useState<any>(null);
+  const [showLoginConfirm, setShowLoginConfirm] = useState<any>(null);
+
+  useEffect(() => {
+    const loaded = JSON.parse(localStorage.getItem('mock_tenants_db') || '[]');
+    if (loaded.length > 0) {
+      setTenants([...MOCK_TENANTS, ...loaded]);
+    } else {
+      setTenants(MOCK_TENANTS);
+    }
+  }, []);
+
+  const saveToDB = (updatedList: any[]) => {
+    // We only save the "new" ones or the full list excluding defaults to local storage
+    const customOnes = updatedList.filter(t => !MOCK_TENANTS.find(m => m.id === t.id));
+    localStorage.setItem('mock_tenants_db', JSON.stringify(customOnes));
+    setTenants(updatedList);
+  };
 
   const handleAddTenant = (e: React.FormEvent) => {
     e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const newTenant = {
+      id: Date.now(),
+      name: formData.get('name'),
+      slug: formData.get('slug'),
+      email: formData.get('email'),
+      phone: formData.get('phone'),
+      size: formData.get('size'),
+      industry: formData.get('industry'),
+      plan: 'BASIC',
+      status: 'ACTIVE',
+      joined: new Date().toISOString().split('T')[0]
+    };
+    saveToDB([...tenants, newTenant]);
     setShowAddModal(false);
     toast.success('Tenant organization created successfully!');
   };
 
-  const loginAsAdmin = (slug: string) => {
-    toast.loading(`Authenticating as ${slug} administrator...`, { duration: 2000 });
-    setTimeout(() => {
-      localStorage.setItem('tenant_slug', slug);
-      localStorage.setItem('role', 'ADMIN');
-      toast.success(`Successfully switched to ${slug} context!`);
-      // Redirect to dashboard with new tenant context
-      window.location.href = '/dashboard';
-    }, 2000);
+  const handleUpdateTenant = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const updated = tenants.map(t => t.id === showEditModal.id ? {
+      ...t,
+      name: formData.get('name'),
+      slug: formData.get('slug'),
+      email: formData.get('email'),
+      phone: formData.get('phone'),
+      size: formData.get('size'),
+      industry: formData.get('industry'),
+    } : t);
+    saveToDB(updated);
+    setShowEditModal(null);
+    toast.success('Tenant details updated!');
   };
 
-  const handleStatusChange = (id: number, status: string) => {
-    setTenants(tenants.map(t => t.id === id ? { ...t, status } : t));
-    toast.success(`Tenant status updated to ${status}`);
+  const handleDuplicate = (tenant: any) => {
+    const newTenant = {
+      ...tenant,
+      id: Date.now(),
+      name: `${tenant.name} (Copy)`,
+      slug: `${tenant.slug}-copy`,
+      joined: new Date().toISOString().split('T')[0]
+    };
+    saveToDB([...tenants, newTenant]);
+    toast.success(`Duplicated ${tenant.name}`);
+  };
+
+  const handleSoftDelete = (tenant: any) => {
+    const recycled = JSON.parse(localStorage.getItem('crm_recycle_bin') || '[]');
+    localStorage.setItem('crm_recycle_bin', JSON.stringify([...recycled, { ...tenant, deletedAt: new Date().toISOString() }]));
+    
+    const updated = tenants.filter(t => t.id !== tenant.id);
+    saveToDB(updated);
+    toast.success(`${tenant.name} moved to recycle bin`);
+  };
+
+  const performLogin = (tenant: any) => {
+    toast.loading(`Authenticating as ${tenant.slug} administrator...`, { duration: 2000 });
+    setTimeout(() => {
+      // Save original context for "Switch Back"
+      localStorage.setItem('original_user', localStorage.getItem('user') || '');
+      localStorage.setItem('original_role', localStorage.getItem('role') || 'SUPER_ADMIN');
+      localStorage.setItem('original_tenant_slug', localStorage.getItem('tenant_slug') || 'system');
+      
+      localStorage.setItem('isImpersonating', 'true');
+      localStorage.setItem('tenant_slug', tenant.slug);
+      localStorage.setItem('tenant_id', tenant.id);
+      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('user', JSON.stringify({ firstName: 'Admin', lastName: tenant.slug, email: `admin@${tenant.slug}.com` }));
+      
+      toast.success(`Successfully switched to ${tenant.slug} context!`);
+      window.location.href = '/dashboard';
+    }, 2000);
   };
 
   const filteredTenants = tenants.filter(t => 
@@ -66,8 +147,12 @@ export default function SuperAdminTenants() {
             <p className="text-muted-foreground">Global oversight of all organizations, billing status, and system health.</p>
           </div>
           <div className="flex items-center space-x-3">
+             <Link href="/dashboard/super-admin/recycle" className="flex items-center space-x-2 bg-muted hover:bg-accent px-6 py-3 rounded-2xl border border-border transition-all">
+                <Trash2 className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs font-black uppercase tracking-widest">Recycle Bin</span>
+             </Link>
              <div className="bg-primary/10 px-6 py-3 rounded-2xl border border-primary/20">
-                <span className="text-xs font-black text-primary uppercase tracking-widest">Total Tenants: {tenants.length}</span>
+                <span className="text-xs font-black text-primary uppercase tracking-widest">Total: {tenants.length}</span>
              </div>
              <button onClick={() => setShowAddModal(true)} className="bg-primary text-white p-4 rounded-2xl shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95">
                 <Plus className="w-6 h-6" />
@@ -152,17 +237,32 @@ export default function SuperAdminTenants() {
                   <td className="px-10 py-8 text-right">
                     <div className="flex justify-end items-center space-x-3">
                       <button 
-                        onClick={() => loginAsAdmin(tenant.slug)}
+                        onClick={() => {
+                          const updated = tenants.map(t => t.id === tenant.id ? { ...t, status: t.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' } : t);
+                          saveToDB(updated);
+                          toast.success(`Tenant ${tenant.status === 'ACTIVE' ? 'suspended' : 'activated'} successfully`);
+                        }}
+                        className={`p-3 rounded-2xl transition-all shadow-sm ${
+                          tenant.status === 'ACTIVE'
+                            ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'
+                            : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white'
+                        }`}
+                        title={tenant.status === 'ACTIVE' ? "Suspend Tenant" : "Activate Tenant"}
+                      >
+                        {tenant.status === 'ACTIVE' ? <Ban className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                      </button>
+                      <button 
+                        onClick={() => setShowLoginConfirm(tenant)}
                         className="p-3 bg-indigo-500/10 text-indigo-500 rounded-2xl hover:bg-indigo-500 hover:text-white transition-all group/btn shadow-sm"
                         title="Login as Admin"
                       >
                         <ArrowUpRight className="w-5 h-5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                       </button>
                       <ActionDropdown 
-                         onView={() => toast.info(`Viewing details for ${tenant.name}`)}
-                         onEdit={() => handleStatusChange(tenant.id, tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')}
-                         onDelete={() => toast.error(`Deletion of ${tenant.name} restricted.`)}
-                         onCopy={() => loginAsAdmin(tenant.slug)} // Use Copy as secondary login trigger
+                         onView={() => setShowViewModal(tenant)}
+                         onEdit={() => setShowEditModal(tenant)}
+                         onDelete={() => handleSoftDelete(tenant)}
+                         onCopy={() => handleDuplicate(tenant)}
                       />
                     </div>
                   </td>
@@ -173,58 +273,143 @@ export default function SuperAdminTenants() {
         </div>
       </div>
 
+      {/* Modals */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="glass-premium w-full max-w-2xl rounded-[40px] border border-border p-10 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-8">
-               <h2 className="text-2xl font-black text-foreground">Create New Tenant</h2>
-               <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground"><X className="w-5 h-5" /></button>
-            </div>
-            <form onSubmit={handleAddTenant} className="space-y-6">
-               <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Organization Name</label>
-                    <input required type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Acme Corp" />
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Slug / Subdomain</label>
-                    <input required type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="acme" />
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Admin Email</label>
-                    <input required type="email" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="admin@acme.com" />
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Phone Number</label>
-                    <input required type="tel" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="+1..." />
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Company Size</label>
-                    <select required className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground">
-                      <option value="">Select Size</option>
-                      <option value="1-10">1-10 employees</option>
-                      <option value="11-50">11-50 employees</option>
-                      <option value="51-200">51-200 employees</option>
-                      <option value="201+">201+ employees</option>
-                    </select>
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Industry</label>
-                    <select required className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground">
-                      <option value="">Select Industry</option>
-                      <option value="Tech">Technology</option>
-                      <option value="Finance">Finance</option>
-                      <option value="Healthcare">Healthcare</option>
-                      <option value="Retail">Retail</option>
-                      <option value="Other">Other</option>
-                    </select>
-                 </div>
-               </div>
-               <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all mt-4">Provision Workspace</button>
-            </form>
-          </div>
+        <Modal title="Create New Tenant" onClose={() => setShowAddModal(false)}>
+           <form onSubmit={handleAddTenant} className="space-y-6">
+              <TenantFormFields />
+              <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all mt-4">Provision Workspace</button>
+           </form>
+        </Modal>
+      )}
+
+      {showEditModal && (
+        <Modal title={`Edit ${showEditModal.name}`} onClose={() => setShowEditModal(null)}>
+           <form onSubmit={handleUpdateTenant} className="space-y-6">
+              <TenantFormFields defaultValues={showEditModal} />
+              <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all mt-4">Save Changes</button>
+           </form>
+        </Modal>
+      )}
+
+      {showViewModal && (
+        <Modal title="Tenant Details" onClose={() => setShowViewModal(null)}>
+           <div className="space-y-8">
+              <div className="flex items-center space-x-6 p-6 bg-muted/50 rounded-[32px] border border-border">
+                <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center text-primary text-3xl font-black">{showViewModal.name.charAt(0)}</div>
+                <div>
+                   <h3 className="text-xl font-black">{showViewModal.name}</h3>
+                   <p className="text-muted-foreground text-sm">@{showViewModal.slug}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                 <DetailItem label="Email Address" value={showViewModal.email} />
+                 <DetailItem label="Phone Number" value={showViewModal.phone || 'N/A'} />
+                 <DetailItem label="Industry" value={showViewModal.industry || 'N/A'} />
+                 <DetailItem label="Organization Size" value={showViewModal.size || 'N/A'} />
+                 <DetailItem label="Current Plan" value={showViewModal.plan} isBadge />
+                 <DetailItem label="Status" value={showViewModal.status} isBadge />
+                 <DetailItem label="Joined On" value={showViewModal.joined} />
+              </div>
+              <button onClick={() => setShowViewModal(null)} className="w-full py-4 bg-muted text-foreground rounded-2xl font-bold text-sm hover:bg-border transition-all">Close Details</button>
+           </div>
+        </Modal>
+      )}
+
+      {showLoginConfirm && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
+           <div className="glass-premium w-full max-w-md rounded-[40px] border border-border p-10 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
+              <div className="w-20 h-20 bg-amber-500/10 text-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                 <AlertTriangle className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-black mb-2">Switch Context?</h2>
+              <p className="text-muted-foreground text-sm mb-8">You are about to login as the administrator of <strong>{showLoginConfirm.name}</strong>. Your current session will be temporarily switched.</p>
+              <div className="flex flex-col space-y-3">
+                 <button onClick={() => performLogin(showLoginConfirm)} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all">Confirm & Switch</button>
+                 <button onClick={() => setShowLoginConfirm(null)} className="w-full py-4 bg-muted text-foreground rounded-2xl font-bold text-sm hover:bg-border transition-all">Cancel</button>
+              </div>
+           </div>
         </div>
       )}
     </DashboardLayout>
+  );
+}
+
+function Modal({ title, children, onClose }: { title: string, children: React.ReactNode, onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+      <div className="glass-premium w-full max-w-2xl rounded-[40px] border border-border p-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden relative">
+        <div className="flex justify-between items-center mb-8">
+           <h2 className="text-2xl font-black text-foreground">{title}</h2>
+           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-hide">
+           {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TenantFormFields({ defaultValues }: { defaultValues?: any }) {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <FormField label="Organization Name" name="name" placeholder="Acme Corp" defaultValue={defaultValues?.name} required />
+      <FormField label="Slug / Subdomain" name="slug" placeholder="acme" defaultValue={defaultValues?.slug} required />
+      <FormField label="Admin Email" name="email" type="email" placeholder="admin@acme.com" defaultValue={defaultValues?.email} required />
+      <FormField label="Phone Number" name="phone" type="tel" placeholder="+1..." defaultValue={defaultValues?.phone} required />
+      <div className="space-y-2">
+        <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Company Size</label>
+        <select name="size" defaultValue={defaultValues?.size || ""} required className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground">
+          <option value="">Select Size</option>
+          <option value="1-10">1-10 employees</option>
+          <option value="11-50">11-50 employees</option>
+          <option value="51-200">51-200 employees</option>
+          <option value="201+">201+ employees</option>
+        </select>
+      </div>
+      <div className="space-y-2">
+        <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Industry</label>
+        <select name="industry" defaultValue={defaultValues?.industry || ""} required className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground">
+          <option value="">Select Industry</option>
+          <option value="Tech">Technology</option>
+          <option value="Finance">Finance</option>
+          <option value="Healthcare">Healthcare</option>
+          <option value="Retail">Retail</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, name, placeholder, type = "text", defaultValue, required }: any) {
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">{label}</label>
+      <input 
+        name={name}
+        required={required}
+        type={type} 
+        defaultValue={defaultValue}
+        className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" 
+        placeholder={placeholder} 
+      />
+    </div>
+  );
+}
+
+function DetailItem({ label, value, isBadge }: { label: string, value: string, isBadge?: boolean }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">{label}</p>
+      {isBadge ? (
+        <span className="inline-block px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[10px] font-black uppercase">
+          {value}
+        </span>
+      ) : (
+        <p className="text-sm font-bold text-foreground">{value}</p>
+      )}
+    </div>
   );
 }

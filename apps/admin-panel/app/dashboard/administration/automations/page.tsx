@@ -19,6 +19,7 @@ import {
   Workflow
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import ModuleGuard from '@/components/ModuleGuard';
 
 const INITIAL_AUTOMATIONS = [
   { id: 1, name: 'Lead Welcome Sequence', trigger: 'New Contact', actions: 3, status: 'ACTIVE', lastRun: '2 mins ago' },
@@ -27,6 +28,14 @@ const INITIAL_AUTOMATIONS = [
 ];
 
 export default function AutomationEnginePage() {
+  return (
+    <ModuleGuard moduleId="automations">
+      <AutomationContent />
+    </ModuleGuard>
+  );
+}
+
+function AutomationContent() {
   const [automations, setAutomations] = useState(INITIAL_AUTOMATIONS);
   const [showWizard, setShowWizard] = useState(false);
 

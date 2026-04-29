@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ActionDropdown from '@/components/ActionDropdown';
+import ModuleGuard from '@/components/ModuleGuard';
 
 const MOCK_WEBHOOKS = [
   { id: 1, name: 'Stripe Payment Webhook', url: 'https://api.crm.com/webhooks/stripe', status: 'ACTIVE', lastEvent: 'Success', time: '5 mins ago' },
@@ -25,6 +26,14 @@ const MOCK_WEBHOOKS = [
 ];
 
 export default function WebhookSystemPage() {
+  return (
+    <ModuleGuard moduleId="webhooks">
+      <WebhooksContent />
+    </ModuleGuard>
+  );
+}
+
+function WebhooksContent() {
   const [webhooks, setWebhooks] = useState(MOCK_WEBHOOKS);
   const [showAddModal, setShowAddModal] = useState(false);
   const [inspectPayload, setInspectPayload] = useState<any>(null);

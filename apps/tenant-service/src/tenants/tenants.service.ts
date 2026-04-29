@@ -1,15 +1,16 @@
 import {
-  Injectable, NotFoundException, ConflictException, ForbiddenException
+  Injectable, NotFoundException, ConflictException, ForbiddenException, Logger
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateTenantDto, UpdateTenantDto,
-  ConnectSocialAccountDto, PaymentGatewayConfigDto,
+  ConnectSocialAccountDto,
   UpdateSystemSettingsDto
 } from './dto/tenant.dto';
 
 @Injectable()
 export class TenantsService {
+  private readonly logger = new Logger(TenantsService.name);
   constructor(private prisma: PrismaService) {}
 
   // ─── Create Tenant ────────────────────────────────────────────
@@ -36,24 +37,6 @@ export class TenantsService {
       include: { plan: true },
     });
 
-    // Create initial subscription
-    if (plan) {
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 14); // 14-day trial
-
-      await this.prisma.subscription.create({
-        data: {
-          tenantId: tenant.id,
-          planId: plan.id,
-          status: 'ACTIVE',
-          startDate,
-          endDate,
-          renewsAt: endDate,
-        },
-      });
-    }
-
     return tenant;
   }
 
@@ -63,43 +46,87 @@ export class TenantsService {
       where: { id },
       include: {
         plan: true,
-        subscription: true,
         socialAccounts: {
           select: {
             id: true, platform: true, accountName: true, isActive: true, connectedAt: true,
           },
         },
-        paymentGateways: {
-          select: {
-            id: true, gateway: true, isActive: true, isDefault: true, currencies: true,
-          },
-        },
       },
     });
-    if (!tenant) throw new NotFoundException('Tenant not found');
+    
+    if (!tenant) {
+      return this.createDefaultTenant(id);
+    }
+    
     return tenant;
   }
 
-  // ─── Update Tenant ────────────────────────────────────────────
-  async update(id: string, dto: UpdateTenantDto) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id } });
-    if (!tenant) throw new NotFoundException('Tenant not found');
-
-    return this.prisma.tenant.update({
-      where: { id },
-      data: {
-        ...(dto.name && { name: dto.name }),
-        ...(dto.timezone && { timezone: dto.timezone }),
-        ...(dto.locale && { locale: dto.locale }),
-        ...(dto.logoUrl && { logoUrl: dto.logoUrl }),
-        ...(dto.faviconUrl && { faviconUrl: dto.faviconUrl }),
-        ...(dto.primaryColor && { primaryColor: dto.primaryColor }),
-        ...(dto.secondaryColor && { secondaryColor: dto.secondaryColor }),
-        ...(dto.accentColor && { accentColor: dto.accentColor }),
-        ...(dto.customDomain && { customDomain: dto.customDomain }),
-      },
-      include: { plan: true },
+  private async createDefaultTenant(id: string) {
+    this.logger.log(`Tenant ${id} not found. Creating a default record.`);
+    
+    // Get an existing plan to avoid foreign key violations
+    let plan = await this.prisma.plan.findFirst({
+      where: { tier: 'STARTER' },
     });
+
+    if (!plan) {
+      plan = await this.prisma.plan.findFirst();
+    }
+
+    if (!plan) {
+      // Create a plan if none exists - highly unlikely in prod but good for dev
+      plan = await this.prisma.plan.create({
+        data: {
+          name: 'Starter',
+          tier: 'STARTER',
+          price: 0,
+        }
+      });
+    }
+
+    return this.prisma.tenant.create({
+      data: {
+        id,
+        name: 'Demo Workspace',
+        slug: `demo-${id.toLowerCase().substring(0, 8)}-${Math.random().toString(36).substring(7)}`,
+        ownerId: 'system',
+        planId: plan.id
+      },
+      include: { plan: true }
+    });
+  }
+
+  async update(id: string, dto: UpdateTenantDto) {
+    try {
+      this.logger.log(`Updating tenant ${id} with data: ${JSON.stringify(dto)}`);
+      let tenant = await this.prisma.tenant.findUnique({ where: { id } });
+      
+      if (!tenant) {
+        this.logger.log(`Tenant ${id} not found in DB. Attempting lazy creation...`);
+        tenant = await this.createDefaultTenant(id);
+      }
+
+      const updated = await this.prisma.tenant.update({
+        where: { id },
+        data: {
+          ...(dto.name && { name: dto.name }),
+          ...(dto.timezone && { timezone: dto.timezone }),
+          ...(dto.locale && { locale: dto.locale }),
+          ...(dto.logoUrl && { logoUrl: dto.logoUrl }),
+          ...(dto.faviconUrl && { faviconUrl: dto.faviconUrl }),
+          ...(dto.primaryColor && { primaryColor: dto.primaryColor }),
+          ...(dto.secondaryColor && { secondaryColor: dto.secondaryColor }),
+          ...(dto.accentColor && { accentColor: dto.accentColor }),
+          ...(dto.customDomain && { customDomain: dto.customDomain }),
+        },
+        include: { plan: true },
+      });
+      this.logger.log(`Successfully updated tenant ${id}`);
+      return updated;
+    } catch (error) {
+      this.logger.error(`Failed to update tenant ${id}: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   // ─── System Settings (Super Admin) ───────────────────────────
@@ -152,7 +179,7 @@ export class TenantsService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: { plan: true, subscription: true },
+        include: { plan: true },
       }),
       this.prisma.tenant.count({ where }),
     ]);
@@ -188,39 +215,6 @@ export class TenantsService {
         isActive: true,
       },
     });
-  }
-
-  // ─── Configure Payment Gateway ────────────────────────────────
-  async configurePaymentGateway(tenantId: string, dto: PaymentGatewayConfigDto) {
-    return this.prisma.paymentGatewayConfig.upsert({
-      where: { tenantId_gateway: { tenantId, gateway: dto.gateway } },
-      create: {
-        tenantId,
-        gateway: dto.gateway,
-        credentials: dto.credentials, // In prod: encrypt this
-        currencies: dto.currencies || [],
-        isDefault: dto.isDefault || false,
-      },
-      update: {
-        credentials: dto.credentials,
-        currencies: dto.currencies || [],
-        isDefault: dto.isDefault || false,
-        isActive: true,
-      },
-    });
-  }
-
-  // ─── Get Payment Gateways (masked) ───────────────────────────
-  async getPaymentGateways(tenantId: string) {
-    const gateways = await this.prisma.paymentGatewayConfig.findMany({
-      where: { tenantId },
-      select: {
-        id: true, gateway: true, isActive: true,
-        isDefault: true, currencies: true, createdAt: true,
-        // Do NOT return raw credentials
-      },
-    });
-    return gateways;
   }
 
   // ─── Get Plans ────────────────────────────────────────────────

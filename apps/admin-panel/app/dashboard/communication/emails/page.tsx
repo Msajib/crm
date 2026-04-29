@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import Link from 'next/link';
 import { 
   Mail, 
   Send, 
@@ -11,47 +12,91 @@ import {
   Search,
   Plus,
   Paperclip,
-  RotateCcw
+  RotateCcw,
+  Settings,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { api } from '@/lib/api';
 
 export default function CommunicationEmails() {
   const [emails, setEmails] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasSmtp, setHasSmtp] = useState<boolean | null>(null);
 
   useEffect(() => {
+    checkSmtp();
     fetchEmails();
   }, []);
 
+  const checkSmtp = async () => {
+    try {
+      const config = await api.get('/communications/config');
+      setHasSmtp(!!config && !!config.host);
+    } catch (err) {
+      setHasSmtp(false);
+    }
+  };
+
   const fetchEmails = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/communications/logs', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setEmails(data.emails || []);
-      }
+      const data = await api.get('/communications/logs');
+      setEmails(data || []);
     } catch (err) {
-      toast.error('Failed to fetch emails');
+      // Don't toast if it's just empty or 404
+      console.log('Failed to fetch email logs');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (hasSmtp === false) {
+    return (
+      <DashboardLayout>
+        <div className="animate-fade-in flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+           <div className="w-20 h-20 bg-amber-500/10 rounded-3xl flex items-center justify-center mb-6 text-amber-500">
+              <AlertCircle className="w-10 h-10" />
+           </div>
+           <h1 className="text-3xl font-black text-foreground mb-4 tracking-tight">Email System Not Configured</h1>
+           <p className="text-muted-foreground max-w-md mx-auto mb-10 leading-relaxed">
+             You haven't connected an SMTP server yet. To send and receive business emails, please complete the system setup.
+           </p>
+           <div className="flex space-x-4">
+              <Link 
+                href="/dashboard/settings/email" 
+                className="bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-black flex items-center space-x-3 hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-primary/20"
+              >
+                <Settings className="w-5 h-5" />
+                <span>Configure SMTP Now</span>
+              </Link>
+           </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="animate-fade-in h-[calc(100vh-160px)] flex flex-col">
         <header className="flex justify-between items-center mb-8">
            <div>
-              <h1 className="text-3xl font-black text-foreground mb-1">Business Inbox</h1>
-              <p className="text-muted-foreground text-sm">Centralized email management with SendGrid integration.</p>
+              <h1 className="text-3xl font-black text-foreground mb-1 tracking-tight">Business Inbox</h1>
+              <p className="text-muted-foreground text-sm font-medium italic">Connected via SMTP. Monitoring all outbound lead communications.</p>
            </div>
-           <button className="bg-primary text-white px-6 py-3 rounded-2xl font-bold flex items-center space-x-2 hover:opacity-90 transition-all shadow-lg shadow-primary/25">
-              <Plus className="w-5 h-5" />
-              <span>Compose Email</span>
-           </button>
+           <div className="flex space-x-4">
+              <Link 
+                href="/dashboard/communication/templates"
+                className="bg-muted text-foreground px-6 py-3 rounded-2xl font-bold flex items-center space-x-2 hover:bg-accent transition-all border border-border"
+              >
+                 <FileText className="w-5 h-5" />
+                 <span>Templates</span>
+              </Link>
+              <button className="bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-bold flex items-center space-x-2 hover:opacity-90 transition-all shadow-lg shadow-primary/25 active:scale-95">
+                 <Plus className="w-5 h-5" />
+                 <span>Compose Email</span>
+              </button>
+           </div>
         </header>
 
         <div className="flex-1 flex gap-8 overflow-hidden">

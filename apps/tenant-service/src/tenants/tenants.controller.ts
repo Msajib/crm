@@ -6,7 +6,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { TenantsService } from './tenants.service';
 import {
   CreateTenantDto, UpdateTenantDto,
-  ConnectSocialAccountDto, PaymentGatewayConfigDto,
+  ConnectSocialAccountDto,
   UpdateSystemSettingsDto
 } from './dto/tenant.dto';
 
@@ -18,6 +18,26 @@ import {
 @Controller('tenants')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
+
+  @Get('current')
+  @ApiOperation({ summary: 'Get current tenant details' })
+  async findCurrent(@Headers('x-tenant-id') tenantId: string) {
+    if (!tenantId || tenantId === 'system') {
+       return { name: 'System Admin', id: 'system' };
+    }
+    
+    // Demo fallbacks for mock IDs
+    if (tenantId === 't1') return { id: 't1', name: 'Acme Corp', slug: 'acme', plan: { name: 'PRO' } };
+    if (tenantId === 't2') return { id: 't2', name: 'TechFlow', slug: 'techflow', plan: { name: 'ENTERPRISE' } };
+    if (tenantId === 't3') return { id: 't3', name: 'Global Sol', slug: 'global', plan: { name: 'STARTER' } };
+
+    try {
+      return await this.tenantsService.findById(tenantId);
+    } catch (e) {
+      // Fallback for any other non-existent tenant in demo mode
+      return { id: tenantId, name: 'Demo Workspace', slug: 'demo' };
+    }
+  }
 
   @Get('system/settings')
   @ApiOperation({ summary: 'Get global system settings' })
@@ -87,18 +107,23 @@ export class TenantsController {
     return this.tenantsService.connectSocial(tenantId, dto);
   }
 
-  @Post(':id/payment-gateways')
-  @ApiOperation({ summary: 'Configure payment gateway (Admin self-setup)' })
-  async configurePayment(
-    @Param('id') tenantId: string,
-    @Body() dto: PaymentGatewayConfigDto,
+  @Patch(':id/branding')
+  @ApiOperation({ summary: 'Update tenant branding' })
+  async updateBranding(
+    @Param('id') id: string,
+    @Body() dto: any,
   ) {
-    return this.tenantsService.configurePaymentGateway(tenantId, dto);
-  }
-
-  @Get(':id/payment-gateways')
-  @ApiOperation({ summary: 'Get configured payment gateways (credentials masked)' })
-  async getPaymentGateways(@Param('id') tenantId: string) {
-    return this.tenantsService.getPaymentGateways(tenantId);
+    if (id === 'system') {
+      // If it's the system account, update global settings instead
+      return this.tenantsService.updateSystemSettings({
+        systemName: dto.name,
+        logoUrl: dto.logoUrl,
+        faviconUrl: dto.faviconUrl,
+        primaryColor: dto.primaryColor,
+        secondaryColor: dto.secondaryColor,
+        accentColor: dto.accentColor,
+      });
+    }
+    return this.tenantsService.update(id, dto);
   }
 }

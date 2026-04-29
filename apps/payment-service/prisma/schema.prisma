@@ -1,0 +1,74 @@
+// Payment Service Prisma Schema
+// Database: crm_system, Schema: payments
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/payment-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PAYMENT_DATABASE_URL")
+}
+
+model PaymentGatewayConfig {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  gateway      String   // STRIPE, PAYPAL, SSLCOMMERZ, BKASH
+  publicKey    String   @map("public_key")
+  secretKey    String   @map("secret_key")
+  settings     Json?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, gateway])
+  @@index([tenantId])
+  @@map("payment_gateway_configs")
+}
+
+model Subscription {
+  id           String   @id @default(uuid())
+  tenantId     String   @unique @map("tenant_id")
+  planId       String   @map("plan_id")
+  planName     String   @map("plan_name")
+  status       String   @default("ACTIVE") // ACTIVE, TRIAL, EXPIRED, CANCELLED
+  startDate    DateTime @default(now()) @map("start_date")
+  endDate      DateTime? @map("end_date")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  userId      String?  @map("user_id")
+  userName    String?  @map("user_name")
+  userEmail   String?  @map("user_email")
+  orderId     String   @map("order_id")
+  planName    String?  @map("plan_name")
+  amount      Float
+  currency    String   @default("USD")
+  status      String   // PENDING, PAID, CANCELLED
+  gateway     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("invoices")
+}
+
+model PlanPurchaseEvent {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  userId      String   @map("user_id")
+  planId      String   @map("plan_id")
+  planName    String   @map("plan_name")
+  amount      Float
+  purchasedAt DateTime @default(now()) @map("purchased_at")
+
+  @@index([tenantId])
+  @@map("plan_purchase_events")
+}

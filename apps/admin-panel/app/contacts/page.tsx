@@ -1,72 +1,139 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { 
-  Users, 
-  Search, 
   Plus, 
+  Search, 
   Filter, 
-  Download,
-  Trash2,
-  Edit,
+  MoreVertical, 
+  Mail, 
+  Phone, 
+  Globe, 
+  User, 
+  Users,
   X,
-  Globe,
-  ChevronRight
+  Download,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import ActionDropdown from '@/components/ActionDropdown';
 import ContactDetailSidebar from '@/components/ContactDetailSidebar';
+import ActionDropdown from '@/components/ActionDropdown';
+import ModuleGuard from '@/components/ModuleGuard';
+import PremiumModal from '@/components/PremiumModal';
 
-const INITIAL_CONTACTS = [
-  { id: 1, name: 'Sarah Jenkins', email: 'sarah@acme.com', phone: '+1 234 567 890', status: 'CUSTOMER', source: 'Website', score: 98 },
-  { id: 2, name: 'Michael Chen', email: 'm.chen@techflow.io', phone: '+1 987 654 321', status: 'LEAD', source: 'Referral', score: 82 },
-  { id: 3, name: 'Elena Rodriguez', email: 'elena@global.net', phone: '+34 600 123 456', status: 'PROSPECT', source: 'LinkedIn', score: 45 },
-  { id: 4, name: 'David Smith', email: 'david@vertex.co', phone: '+44 20 7123 4567', status: 'CUSTOMER', source: 'Direct', score: 91 },
-];
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState(INITIAL_CONTACTS);
-  const [search, setSearch] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedContact, setSelectedContact] = useState<any>(null);
-  const [newContact, setNewContact] = useState({ name: '', email: '', phone: '', status: 'LEAD', source: 'Direct' });
-
-  const filteredContacts = contacts.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.email.toLowerCase().includes(search.toLowerCase())
+  return (
+    <ModuleGuard moduleId="contacts">
+      <ContactsContent />
+    </ModuleGuard>
   );
+}
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    const id = Date.now();
-    setContacts([{ ...newContact, id, score: Math.floor(Math.random() * 100) }, ...contacts]);
-    setShowAddModal(false);
-    setNewContact({ name: '', email: '', phone: '', status: 'LEAD', source: 'Direct' });
-    toast.success('Contact added successfully!');
-  };
+function ContactsContent() {
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [viewingContact, setViewingContact] = useState<any>(null);
+  const [editContact, setEditContact] = useState<any>(null);
+  const [newContact, setNewContact] = useState({ 
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    phone: '', 
+    jobTitle: '', 
+    address: '',
+    source: 'Website'
+  });
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this contact?')) {
-      setContacts(contacts.filter(c => c.id !== id));
-      toast.success('Contact deleted');
+  const fetchContacts = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/contacts', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setContacts(data.data || []);
+      } else {
+        const errorData = await res.json();
+        console.error('Fetch error:', errorData);
+        toast.error(errorData.message || 'Failed to load contacts');
+      }
+    } catch (err) {
+      toast.error('Failed to load contacts');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [importStep, setImportStep] = useState(1);
+  useEffect(() => {
+    fetchContacts();
+  }, []);
 
-  const handleImport = () => {
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-      {
-        loading: 'Mapping CSV fields...',
-        success: 'Import successful! 124 contacts added.',
-        error: 'Import failed.',
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(newContact),
+      });
+      if (res.ok) {
+        toast.success('Contact added!');
+        setShowAddModal(false);
+        setNewContact({ firstName: '', lastName: '', email: '', phone: '', jobTitle: '', address: '', source: 'Website' });
+        fetchContacts();
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.message || 'Addition failed');
       }
-    );
-    setShowImportModal(false);
-    setImportStep(1);
+    } catch (err) {
+      toast.error('Addition failed');
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/contacts/${editContact.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(editContact),
+      });
+      if (res.ok) {
+        toast.success('Contact updated!');
+        setShowEditModal(false);
+        fetchContacts();
+      }
+    } catch (err) {
+      toast.error('Update failed');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this contact?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/contacts/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        toast.success('Contact deleted');
+        fetchContacts();
+      }
+    } catch (err) {
+      toast.error('Delete failed');
+    }
   };
 
   return (
@@ -75,61 +142,79 @@ export default function ContactsPage() {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
             <h1 className="text-3xl font-black text-foreground mb-2">Contacts</h1>
-            <p className="text-muted-foreground text-sm">Manage and track your customer relationships with AI lead scoring.</p>
+            <p className="text-muted-foreground text-sm font-medium">Manage and track your customer relationships with AI lead scoring.</p>
           </div>
           <div className="flex items-center space-x-3">
-            <button 
-              onClick={() => setShowImportModal(true)}
-              className="bg-muted border border-border text-foreground px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center space-x-2 hover:bg-accent transition-all"
-            >
-              <Download className="w-4 h-4 rotate-180" />
-              <span>Import CSV</span>
+            <button className="p-4 bg-muted hover:bg-muted/80 rounded-2xl transition-all text-muted-foreground">
+               <Upload className="w-5 h-5" />
             </button>
             <button 
               onClick={() => setShowAddModal(true)}
-              className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center space-x-2 shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95"
+              className="px-8 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all flex items-center"
             >
-              <Plus className="w-5 h-5" />
-              <span>Add Contact</span>
+              <Plus className="w-5 h-5 mr-2" />
+              ADD CONTACT
             </button>
           </div>
         </header>
 
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Search by name, email or phone..." 
-              className="w-full bg-muted border border-border rounded-2xl pl-12 pr-4 py-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+        {/* Filters and Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+           <div className="md:col-span-3 flex items-center space-x-4 bg-muted/30 p-2 rounded-3xl border border-border">
+              <div className="flex-1 relative">
+                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                 <input type="text" placeholder="Search contacts by name, email, or company..." className="w-full bg-transparent border-none py-4 pl-14 pr-6 focus:outline-none text-sm font-medium" />
+              </div>
+              <button className="px-6 py-3 bg-background border border-border rounded-2xl text-xs font-black flex items-center hover:bg-accent transition-all">
+                 <Filter className="w-3 h-3 mr-2" />
+                 FILTERS
+              </button>
+           </div>
+           <div className="bg-primary/5 border border-primary/10 rounded-3xl p-4 flex items-center justify-between">
+              <div>
+                 <p className="text-[10px] font-black text-primary uppercase tracking-widest">Total Contacts</p>
+                 <p className="text-2xl font-black text-foreground">{contacts.length}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                 <Users className="w-5 h-5 text-primary" />
+              </div>
+           </div>
         </div>
 
-        <div className="glass-premium rounded-[40px] border border-border overflow-visible premium-shadow">
-          <table className="w-full text-left">
-            <thead className="bg-muted/50 border-b border-border">
-              <tr>
-                <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Contact</th>
-                <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">Status</th>
-                <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">Source</th>
-                <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">AI Score</th>
-                <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right">Action</th>
+        {/* Table */}
+        <div className="glass-card rounded-[40px] border border-border overflow-hidden bg-background/40 shadow-2xl">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border bg-muted/20">
+                <th className="px-8 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Contact Name</th>
+                <th className="px-8 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">Status</th>
+                <th className="px-8 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">Source</th>
+                <th className="px-8 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">Lead Score</th>
+                <th className="px-8 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
-              {filteredContacts.map((contact) => (
-                <tr key={contact.id} className="hover:bg-primary/5 transition-all group cursor-pointer" onClick={() => setSelectedContact(contact)}>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-20 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                    <p className="mt-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">Loading contacts...</p>
+                  </td>
+                </tr>
+              ) : contacts.map((contact) => (
+                <tr 
+                  key={contact.id} 
+                  className="border-b border-border/50 hover:bg-primary/[0.02] transition-colors cursor-pointer group"
+                  onClick={() => setViewingContact(contact)}
+                >
                   <td className="px-8 py-6">
                     <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold text-sm">
-                        {contact.name.split(' ').map(n => n[0]).join('')}
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black text-xs">
+                        {contact.firstName?.[0]}{contact.lastName?.[0]}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-foreground">{contact.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{contact.email}</p>
+                        <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{contact.firstName} {contact.lastName}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">{contact.email}</p>
                       </div>
                     </div>
                   </td>
@@ -143,117 +228,111 @@ export default function ContactsPage() {
                     </span>
                   </td>
                   <td className="px-8 py-6 text-center">
-                    <span className="text-xs text-muted-foreground flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-muted-foreground flex items-center justify-center uppercase tracking-wider">
                       <Globe className="w-3 h-3 mr-2 opacity-50" />
-                      {contact.source}
+                      {contact.source || 'N/A'}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-center">
                     <div className="flex flex-col items-center">
                        <span className={`text-[10px] font-black ${contact.score > 80 ? 'text-emerald-500' : contact.score > 50 ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                          {contact.score}%
+                          {contact.score || 0}%
                        </span>
                        <div className="w-12 h-1 bg-muted rounded-full mt-1 overflow-hidden">
-                          <div className={`h-full ${contact.score > 80 ? 'bg-emerald-500' : contact.score > 50 ? 'bg-amber-500' : 'bg-muted-foreground'}`} style={{ width: `${contact.score}%` }}></div>
+                          <div className={`h-full ${contact.score > 80 ? 'bg-emerald-500' : contact.score > 50 ? 'bg-amber-500' : 'bg-muted-foreground'}`} style={{ width: `${contact.score || 0}%` }}></div>
                        </div>
                     </div>
                   </td>
                   <td className="px-8 py-6 text-right" onClick={e => e.stopPropagation()}>
                      <ActionDropdown 
-                        onEdit={() => setSelectedContact(contact)}
+                        onEdit={() => { setEditContact(contact); setShowEditModal(true); }}
                         onDelete={() => handleDelete(contact.id)}
-                        onView={() => setSelectedContact(contact)}
+                        onView={() => setViewingContact(contact)}
                      />
                   </td>
                 </tr>
               ))}
+              {!loading && contacts.length === 0 && (
+                <tr>
+                   <td colSpan={5} className="py-20 text-center">
+                      <Users className="w-10 h-10 mx-auto text-muted-foreground/30 mb-4" />
+                      <p className="text-sm font-black text-foreground">No contacts found</p>
+                      <p className="text-xs text-muted-foreground mt-1">Start by adding your first customer record.</p>
+                      <button onClick={() => setShowAddModal(true)} className="mt-6 px-6 py-3 bg-primary/10 text-primary rounded-xl text-xs font-black hover:bg-primary hover:text-white transition-all">
+                         CREATE NEW CONTACT
+                      </button>
+                   </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {selectedContact && (
-        <ContactDetailSidebar contact={selectedContact} onClose={() => setSelectedContact(null)} />
+
+      {viewingContact && (
+        <ContactDetailSidebar contact={viewingContact} onClose={() => setViewingContact(null)} />
       )}
 
-      {/* Modals ... */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-premium w-full max-w-lg rounded-[40px] border border-border p-10 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-8">
-               <h2 className="text-2xl font-black text-foreground">Add New Contact</h2>
-               <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground"><X className="w-5 h-5" /></button>
-            </div>
-            <form onSubmit={handleAdd} className="space-y-6">
-               <div className="space-y-2">
-                  <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Full Name</label>
-                  <input required value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="e.g. John Doe" />
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                     <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Email</label>
-                     <input required value={newContact.email} onChange={e => setNewContact({...newContact, email: e.target.value})} type="email" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="john@example.com" />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Phone</label>
-                     <input required value={newContact.phone} onChange={e => setNewContact({...newContact, phone: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="+1 234..." />
-                  </div>
-               </div>
-               <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all mt-4">Create Contact</button>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Add Contact Modal */}
+      <PremiumModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add New Contact"
+        subtitle="Customer Relationship Management"
+        footer={(
+          <button onClick={handleAdd} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all">CREATE CONTACT</button>
+        )}
+      >
+        <form onSubmit={handleAdd} className="space-y-8">
+           <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">First Name</label>
+                 <input required value={newContact.firstName} onChange={e => setNewContact({...newContact, firstName: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/30" placeholder="John" />
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Last Name</label>
+                 <input required value={newContact.lastName} onChange={e => setNewContact({...newContact, lastName: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/30" placeholder="Doe" />
+              </div>
+           </div>
+           <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Email Address</label>
+                 <input required value={newContact.email} onChange={e => setNewContact({...newContact, email: e.target.value})} type="email" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/30" placeholder="john@example.com" />
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Phone Number</label>
+                 <input value={newContact.phone} onChange={e => setNewContact({...newContact, phone: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/30" placeholder="+1 234..." />
+              </div>
+           </div>
+        </form>
+      </PremiumModal>
 
-      {showImportModal && (
-        <div className="fixed inset-0 bg-background/90 backdrop-blur-xl z-50 flex items-center justify-center p-6">
-          <div className="glass-premium w-full max-w-2xl rounded-[48px] border border-border p-12 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-10">
-               <div>
-                  <h2 className="text-2xl font-black text-foreground">Import Contacts</h2>
-                  <p className="text-xs text-muted-foreground mt-1">Upload your CSV file and map fields to your CRM.</p>
-               </div>
-               <button onClick={() => setShowImportModal(false)} className="p-3 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>
-            </div>
-            
-            {importStep === 1 ? (
-              <div className="space-y-8">
-                 <div className="border-2 border-dashed border-border rounded-[32px] p-16 flex flex-col items-center justify-center text-center group hover:border-primary/50 transition-all cursor-pointer">
-                    <div className="w-16 h-16 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                       <Download className="w-8 h-8 rotate-180" />
-                    </div>
-                    <p className="text-sm font-bold text-foreground">Drop your CSV file here</p>
-                    <p className="text-xs text-muted-foreground mt-1">Maximum file size: 10MB</p>
-                    <button className="mt-8 px-8 py-3 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest" onClick={() => setImportStep(2)}>Select File</button>
-                 </div>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                 <div className="space-y-4">
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Intelligent Field Mapping</p>
-                    <div className="grid grid-cols-2 gap-4">
-                       <MappingRow csv="Full Name" crm="name" />
-                       <MappingRow csv="Email Address" crm="email" />
-                       <MappingRow csv="Phone Num" crm="phone" />
-                       <MappingRow csv="Company" crm="company" />
-                    </div>
-                 </div>
-                 <button onClick={handleImport} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-2xl shadow-primary/30 hover:opacity-90 transition-all mt-6 active:scale-95">Complete Import</button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Edit Contact Modal */}
+      <PremiumModal
+        isOpen={showEditModal && !!editContact}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Contact"
+        subtitle="Update Record Details"
+        footer={(
+          <button onClick={handleEditSubmit} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all">SAVE CHANGES</button>
+        )}
+      >
+        {editContact && (
+          <form onSubmit={handleEditSubmit} className="space-y-8">
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">First Name</label>
+                   <input required value={editContact.firstName} onChange={e => setEditContact({...editContact, firstName: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Last Name</label>
+                   <input required value={editContact.lastName} onChange={e => setEditContact({...editContact, lastName: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+                </div>
+             </div>
+          </form>
+        )}
+      </PremiumModal>
     </DashboardLayout>
   );
-}
-
-function MappingRow({ csv, crm }: { csv: string, crm: string }) {
-   return (
-      <div className="p-4 bg-muted border border-border rounded-2xl flex items-center justify-between">
-         <span className="text-[10px] font-bold text-muted-foreground">{csv}</span>
-         <ChevronRight className="w-4 h-4 text-muted-foreground" />
-         <span className="text-[10px] font-black text-primary uppercase">{crm}</span>
-      </div>
-   );
 }

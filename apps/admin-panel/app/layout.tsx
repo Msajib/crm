@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'CRM Pro - SaaS Platform',
   description: 'Enterprise Grade CRM Platform',
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 import { ThemeProvider } from '@/components/ThemeProvider';

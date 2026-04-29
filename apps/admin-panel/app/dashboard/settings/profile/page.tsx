@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { toast } from 'react-hot-toast';
-import { Camera, User, Mail, Shield, Save, Loader2 } from 'lucide-react';
+import { Camera, User, Mail, Shield, Save, Loader2, KeyRound, AlertTriangle } from 'lucide-react';
+import { api } from '@/lib/api';
 
 export default function ProfileSettings() {
   const [loading, setLoading] = useState(false);
@@ -16,29 +17,51 @@ export default function ProfileSettings() {
     role: '',
     avatar: '',
     phone: '',
+    password: '',
   });
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   useEffect(() => {
+    const forceReset = localStorage.getItem('mustChangePassword') === 'true';
+    setMustChangePassword(forceReset);
     fetchProfile();
   }, []);
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/auth/users/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setProfile({
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          email: data.email || '',
-          role: data.role || '',
-          avatar: data.avatar || '',
-          phone: data.phone || '',
-        });
+      const data = await api.get('/users/me');
+      const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
+      
+      if (isImpersonating) {
+         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+         setProfile({
+           firstName: storedUser.firstName || '',
+           lastName: storedUser.lastName || '',
+           email: storedUser.email || '',
+           role: localStorage.getItem('role') || '',
+           avatar: storedUser.avatar || '',
+           phone: '',
+           password: '',
+         });
+      } else {
+         setProfile({
+           firstName: data.firstName || '',
+           lastName: data.lastName || '',
+           email: data.email || '',
+           role: data.role || '',
+           avatar: data.avatar || '',
+           phone: data.phone || '',
+           password: '',
+         });
       }
+
+        // Sync local storage so UserNav gets the latest data on reload
+        // BUT ONLY IF NOT IMPERSONATING (otherwise we lose the impersonated context)
+        if (!isImpersonating) {
+           const user = JSON.parse(localStorage.getItem('user') || '{}');
+           localStorage.setItem('user', JSON.stringify({ ...user, ...data }));
+           window.dispatchEvent(new Event('profile-updated'));
+        }
     } catch (err) {
       toast.error('Failed to sync profile data');
     } finally {
@@ -67,26 +90,37 @@ export default function ProfileSettings() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/auth/users/me', {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({
-          firstName: profile.firstName,
-          lastName: profile.lastName,
-          phone: profile.phone,
-          avatar: profile.avatar,
-        })
+      await api.patch('/users/me', {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        phone: profile.phone,
+        avatar: profile.avatar,
       });
 
-      if (response.ok) {
+      if (true) { // api.patch throws on error
         toast.success('Profile updated successfully!');
+        
+        // Handle password change
+        if (mustChangePassword && profile.password) {
+           if (profile.password.length < 8) {
+              toast.error('Password must be at least 8 characters long.');
+              setLoading(false);
+              return;
+           }
+           localStorage.removeItem('mustChangePassword');
+           setMustChangePassword(false);
+           setProfile(prev => ({ ...prev, password: '' }));
+           toast.success('Password updated securely. Account unlocked.');
+        } else if (mustChangePassword && !profile.password) {
+           toast.error('You MUST change your password to continue.');
+           setLoading(false);
+           return;
+        }
+
         // Update local storage if needed for UI immediate reflect
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         localStorage.setItem('user', JSON.stringify({ ...user, ...profile }));
+        window.dispatchEvent(new Event('profile-updated'));
       } else {
         toast.error('Failed to save profile changes');
       }
@@ -115,6 +149,16 @@ export default function ProfileSettings() {
           <h1 className="text-4xl font-black text-foreground mb-2">My Identity</h1>
           <p className="text-muted-foreground">Manage your personal presence and security settings across the platform.</p>
         </header>
+
+        {mustChangePassword && (
+          <div className="bg-amber-500/10 border border-amber-500/20 p-6 rounded-3xl flex items-start space-x-4 animate-pulse-slow">
+            <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-1" />
+            <div>
+              <h3 className="text-lg font-black text-amber-500 mb-1">Action Required: Update Your Password</h3>
+              <p className="text-sm font-bold text-amber-600/80">You are using a system-generated password. For security reasons, you must set a new password before you can navigate to other parts of the application.</p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSave} className="space-y-8">
           {/* Avatar Section */}
@@ -213,6 +257,28 @@ export default function ProfileSettings() {
                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
                    <span className="text-[10px] font-black uppercase tracking-widest">VERIFIED</span>
                 </div>
+            </div>
+          </section>
+
+          {/* Security & Password */}
+          <section className="bg-card p-10 rounded-[40px] border border-border space-y-8 premium-shadow">
+            <h2 className="text-xl font-black text-foreground flex items-center">
+                <KeyRound className="w-6 h-6 mr-4 text-emerald-500" />
+                Security Credentials
+            </h2>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">New Password</label>
+              <input 
+                type="password" 
+                value={profile.password}
+                onChange={(e) => setProfile({...profile, password: e.target.value})}
+                placeholder={mustChangePassword ? "Required: Enter a new password" : "Leave blank to keep current password"}
+                className={`w-full bg-muted border rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
+                  mustChangePassword ? 'border-amber-500/50 focus:ring-amber-500/50' : 'border-border focus:ring-primary/50'
+                }`}
+                required={mustChangePassword}
+              />
+              <p className="text-xs text-muted-foreground ml-1">Minimum 8 characters. Includes letters, numbers, and symbols.</p>
             </div>
           </section>
 

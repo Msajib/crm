@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { X, FileText, Download, Trash2, Clock, Plus } from 'lucide-react';
+import { X, Mail, Phone, Calendar, DollarSign, Activity, FileText, ChevronRight, User, Building2, Tag } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface ContactDetailSidebarProps {
   contact: any;
@@ -9,16 +10,50 @@ interface ContactDetailSidebarProps {
 }
 
 export default function ContactDetailSidebar({ contact, onClose }: ContactDetailSidebarProps) {
+  const handleSendEmail = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/communications/email', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          to: contact.email,
+          subject: 'Introduction from Antigravity CRM',
+          body: `Hi ${contact.firstName}, I wanted to reach out regarding our recent discussion...`
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Email Sent Successfully');
+      } else {
+        const data = await response.json();
+        if (data.message?.includes('not configured')) {
+           toast.error(data.message, {
+             duration: 5000,
+             icon: '⚠️'
+           });
+        } else {
+           toast.error('Failed to send email');
+        }
+      }
+    } catch (err) {
+      toast.error('Communication error');
+    }
+  };
+
   return (
     <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-background border-l border-border shadow-2xl z-[60] animate-in slide-in-from-right duration-300 flex flex-col">
        <header className="p-8 border-b border-border flex justify-between items-center bg-muted/30">
           <div className="flex items-center space-x-4">
              <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-xl">
-                {contact.name[0]}
+                {contact?.firstName?.[0] || '?'}{contact?.lastName?.[0] || ''}
              </div>
              <div>
-                <h2 className="text-xl font-black text-foreground">{contact.name}</h2>
-                <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Lead Score: {contact.score}%</p>
+                <h2 className="text-xl font-black text-foreground">{contact?.firstName || 'Unknown'} {contact?.lastName || 'Contact'}</h2>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Lead Score: {contact?.score || 0}%</p>
              </div>
           </div>
           <button onClick={onClose} className="p-3 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>
@@ -28,84 +63,126 @@ export default function ContactDetailSidebar({ contact, onClose }: ContactDetail
           {/* Communication Timeline */}
           <section>
              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Activity Timeline</h3>
-                <button className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">+ Log Activity</button>
+                <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Recent Activity</h3>
+                <button className="text-[10px] font-black text-primary hover:underline">LOG ACTIVITY</button>
              </div>
              <div className="space-y-6">
-                <TimelineItem title="Email Sent" desc="Subject: Pricing Proposal for Q2" time="2 hours ago" type="email" />
-                <TimelineItem title="Call Logged" desc="Discussed budget constraints and timeline." time="Yesterday" type="call" />
-                <TimelineItem title="Lead Scored" desc="AI updated score to 98% based on email open." time="2 days ago" type="ai" />
+                {(contact?.activities || []).map((activity: any, idx: number) => (
+                   <div key={idx} className="flex space-x-4">
+                      <div className="mt-1">
+                         <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+                            <Activity className="w-4 h-4 text-primary" />
+                         </div>
+                      </div>
+                      <div className="flex-1">
+                         <div className="flex justify-between items-start">
+                            <h4 className="text-sm font-bold text-foreground">{activity.subject}</h4>
+                            <span className="text-[10px] text-muted-foreground font-medium">{new Date(activity.createdAt).toLocaleDateString()}</span>
+                         </div>
+                         <p className="text-xs text-muted-foreground mt-1">{activity.notes}</p>
+                      </div>
+                   </div>
+                ))}
+                {(!contact?.activities || contact.activities.length === 0) && (
+                   <div className="text-center py-10 border-2 border-dashed border-border rounded-3xl">
+                      <p className="text-xs text-muted-foreground font-bold italic">No recorded activities yet.</p>
+                   </div>
+                )}
              </div>
           </section>
 
-          {/* File Attachments */}
-          <section>
-             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">File Attachments</h3>
-                <button className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-white transition-all"><Plus className="w-4 h-4" /></button>
+          {/* Quick Info */}
+          <section className="grid grid-cols-2 gap-4">
+             <div className="p-6 rounded-3xl bg-muted/30 border border-border">
+                <Mail className="w-4 h-4 text-primary mb-3" />
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Email</p>
+                <p className="text-sm font-bold text-foreground truncate">{contact?.email || 'N/A'}</p>
              </div>
-             <div className="grid grid-cols-2 gap-4">
-                <FileCard name="Proposal_v2.pdf" size="2.4 MB" date="Apr 20" />
-                <FileCard name="Tax_ID.png" size="1.1 MB" date="Apr 18" />
+             <div className="p-6 rounded-3xl bg-muted/30 border border-border">
+                <Phone className="w-4 h-4 text-primary mb-3" />
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Phone</p>
+                <p className="text-sm font-bold text-foreground">{contact?.phone || 'N/A'}</p>
              </div>
           </section>
 
-          {/* Deals */}
-          <section>
-             <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-6">Linked Deals</h3>
-             <div className="p-6 bg-muted/30 border border-border rounded-[32px] flex items-center justify-between group hover:border-primary/20 transition-all cursor-pointer">
-                <div>
-                   <p className="text-sm font-bold text-foreground group-hover:text-primary transition-all">Enterprise License</p>
-                   <p className="text-[10px] text-muted-foreground font-black uppercase mt-1 tracking-widest">$12,000 • Negotiation</p>
+          {/* Details */}
+          <section className="space-y-4">
+             <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-6">Contact Details</h3>
+             <div className="space-y-4 p-6 rounded-3xl bg-muted/30 border border-border">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                   <span className="text-xs font-bold text-muted-foreground">Job Title</span>
+                   <span className="text-xs font-black text-foreground">{contact?.jobTitle || 'N/A'}</span>
                 </div>
-                <Download className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all" />
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                   <span className="text-xs font-bold text-muted-foreground">Source</span>
+                   <span className="text-xs font-black text-primary">{contact?.source || 'Direct'}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                   <span className="text-xs font-bold text-muted-foreground">Status</span>
+                   <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500">{contact?.status}</span>
+                </div>
+                <div className="flex flex-col py-2">
+                   <span className="text-xs font-bold text-muted-foreground mb-2">Address</span>
+                   <span className="text-xs font-medium text-foreground">{contact?.address || 'No address provided'}</span>
+                </div>
+             </div>
+          </section>
+
+          {/* Linked Deals */}
+          <section>
+             <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-6">Associated Deals</h3>
+             <div className="space-y-3">
+                {(contact?.deals || []).map((deal: any, idx: number) => (
+                   <div key={idx} className="group p-4 rounded-2xl border border-border hover:border-primary/50 transition-all cursor-pointer">
+                      <div className="flex justify-between items-center">
+                         <div className="flex items-center space-x-3">
+                            <DollarSign className="w-4 h-4 text-emerald-500" />
+                            <span className="text-sm font-bold text-foreground group-hover:text-primary">{deal.title}</span>
+                         </div>
+                         <span className="text-xs font-black text-foreground">${deal.value.toLocaleString()}</span>
+                      </div>
+                   </div>
+                ))}
+                {(!contact?.deals || contact.deals.length === 0) && (
+                   <p className="text-xs text-muted-foreground font-bold italic">No active deals found.</p>
+                )}
              </div>
           </section>
        </div>
 
-       <footer className="p-8 border-t border-border bg-muted/10">
-          <button className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/20 hover:opacity-90 active:scale-95 transition-all">
-             Start AI Conversation
+       <footer className="p-8 border-t border-border flex space-x-4 bg-muted/30">
+          <button 
+            onClick={handleSendEmail}
+            className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center"
+          >
+             <Mail className="w-4 h-4 mr-2" />
+             SEND EMAIL
+          </button>
+          <button className="w-14 h-14 rounded-2xl border border-border flex items-center justify-center hover:bg-muted transition-all">
+             <MoreVertical className="w-5 h-5 text-muted-foreground" />
           </button>
        </footer>
     </div>
   );
 }
 
-function TimelineItem({ title, desc, time, type }: any) {
-  return (
-    <div className="flex space-x-4 relative">
-       <div className="absolute left-4 top-10 bottom-0 w-px bg-border"></div>
-       <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 z-10 ${
-          type === 'email' ? 'bg-indigo-500/10 text-indigo-500' :
-          type === 'call' ? 'bg-emerald-500/10 text-emerald-500' :
-          'bg-primary/10 text-primary'
-       }`}>
-          <Clock className="w-4 h-4" />
-       </div>
-       <div>
-          <div className="flex items-center space-x-2">
-             <p className="text-sm font-bold text-foreground">{title}</p>
-             <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">• {time}</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{desc}</p>
-       </div>
-    </div>
-  );
-}
-
-function FileCard({ name, size, date }: any) {
-  return (
-    <div className="p-4 bg-muted/30 border border-border rounded-2xl flex flex-col justify-between h-32 group hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden">
-       <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="p-1.5 hover:bg-background rounded-lg text-muted-foreground hover:text-foreground"><Download className="w-3 h-3" /></button>
-          <button className="p-1.5 hover:bg-background rounded-lg text-muted-foreground hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
-       </div>
-       <FileText className="w-8 h-8 text-primary" />
-       <div>
-          <p className="text-[10px] font-bold text-foreground truncate">{name}</p>
-          <p className="text-[8px] text-muted-foreground font-black uppercase tracking-widest mt-1">{size} • {date}</p>
-       </div>
-    </div>
-  );
+function MoreVertical(props: any) {
+   return (
+     <svg
+       {...props}
+       xmlns="http://www.w3.org/2000/svg"
+       width="24"
+       height="24"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       strokeWidth="2"
+       strokeLinecap="round"
+       strokeLinejoin="round"
+     >
+       <circle cx="12" cy="12" r="1" />
+       <circle cx="12" cy="5" r="1" />
+       <circle cx="12" cy="19" r="1" />
+     </svg>
+   )
 }

@@ -1,6 +1,6 @@
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = '/api/v1';
+const API_BASE_URL = '/api';
 
 class ApiError extends Error {
   status: number;
@@ -14,7 +14,11 @@ class ApiError extends Error {
 }
 
 async function request(endpoint: string, options: RequestInit = {}) {
-  const token = Cookies.get('token');
+  let token = Cookies.get('token');
+  
+  if (!token && typeof window !== 'undefined') {
+    token = localStorage.getItem('token') || undefined;
+  }
   
   const headers = new Headers(options.headers);
   if (token) {
@@ -22,6 +26,15 @@ async function request(endpoint: string, options: RequestInit = {}) {
   }
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
+  }
+
+  // Add impersonation header if present in localStorage
+  if (typeof window !== 'undefined') {
+    const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
+    const impersonatedId = localStorage.getItem('tenant_id');
+    if (isImpersonating && impersonatedId) {
+       headers.set('x-impersonate-tenant-id', impersonatedId);
+    }
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -37,13 +50,15 @@ async function request(endpoint: string, options: RequestInit = {}) {
       errorData = { message: response.statusText };
     }
     
-    // Auto-logout on 401 Unauthorized
+    // Auto-logout on 401 Unauthorized — use the server-side route
+    // to ensure cookies are properly cleared
     if (response.status === 401 && typeof window !== 'undefined') {
-      Cookies.remove('token');
-      Cookies.remove('role');
       localStorage.removeItem('token');
       localStorage.removeItem('role');
-      window.location.href = '/login';
+      localStorage.removeItem('refreshToken');
+      // POST to server-side logout then redirect — best effort
+      fetch('/api/logout', { method: 'POST', credentials: 'include' })
+        .finally(() => { window.location.href = '/login'; });
     }
 
     throw new ApiError(response.status, errorData.message || 'API Request Failed', errorData);

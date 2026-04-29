@@ -55,6 +55,16 @@ export class CreateContactDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  jobTitle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   assignedTo?: string;
 }
 
@@ -71,6 +81,8 @@ export class UpdateContactDto {
   @ApiPropertyOptional() @IsOptional() @IsObject() customFields?: Record<string, any>;
   @ApiPropertyOptional() @IsOptional() @IsString() assignedTo?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() status?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() jobTitle?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() address?: string;
 }
 
 export class CreateDealDto {
@@ -84,6 +96,7 @@ export class CreateDealDto {
   @ApiPropertyOptional() @IsOptional() value?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() currency?: string;
   @ApiPropertyOptional() @IsOptional() closeDate?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() notes?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() assignedTo?: string;
 }
@@ -94,6 +107,7 @@ export class UpdateDealDto {
   @ApiPropertyOptional() @IsOptional() value?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() status?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() notes?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() assignedTo?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() lostReason?: string;
 }
@@ -120,4 +134,15 @@ export class CreateTaskDto {
   @ApiPropertyOptional() @IsOptional() dueDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() relatedTo?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() relatedType?: string;
+  @ApiPropertyOptional() @IsOptional() @IsArray() checklists?: any[];
+}
+
+export class UpdateTaskDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() title?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() assignedTo?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() priority?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() status?: string;
+  @ApiPropertyOptional() @IsOptional() dueDate?: string;
+  @ApiPropertyOptional() @IsOptional() @IsArray() checklists?: any[];
 }

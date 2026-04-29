@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -11,8 +11,12 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'fallback_secret',
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET') || 'fallback_secret',
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [GatewayController],

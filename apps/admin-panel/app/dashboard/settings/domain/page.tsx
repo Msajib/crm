@@ -27,27 +27,27 @@ export default function CustomDomainSettings() {
     <DashboardLayout>
       <div className="animate-fade-in">
         <header className="mb-10">
-          <h1 className="text-3xl font-bold mb-2">Custom Domain</h1>
-          <p className="text-gray-500">Connect your own domain to provide a white-labeled experience for your clients.</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Custom Domain</h1>
+          <p className="text-muted-foreground">Connect your own domain to provide a white-labeled experience for your clients.</p>
         </header>
 
         <div className="space-y-8">
           {/* Subdomain Info */}
-          <section className="bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border border-white/10 rounded-3xl p-8">
+          <section className="bg-gradient-to-r from-primary/10 to-purple-500/10 border border-border rounded-3xl p-8">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-indigo-400 font-semibold mb-1">Your Subdomain</p>
-                <h2 className="text-2xl font-mono text-white">acme-corp.crmplatform.com</h2>
+                <p className="text-sm text-primary font-semibold mb-1">Your Subdomain</p>
+                <h2 className="text-2xl font-mono text-foreground">acme-corp.crmplatform.com</h2>
               </div>
-              <div className="bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-full text-xs font-bold border border-emerald-500/30">
+              <div className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-full text-xs font-bold border border-emerald-500/30">
                 ACTIVE
               </div>
             </div>
           </section>
 
           {/* Custom Domain Form */}
-          <section className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl">
-            <h3 className="text-xl font-semibold mb-6">Connect Custom Domain</h3>
+          <section className="glass-premium border border-border rounded-3xl p-8 shadow-2xl">
+            <h3 className="text-xl font-semibold mb-6 text-foreground">Connect Custom Domain</h3>
             
             <div className="space-y-6">
               <div className="flex space-x-4">
@@ -57,29 +57,29 @@ export default function CustomDomainSettings() {
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
                     placeholder="crm.yourdomain.com"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                    className="w-full bg-background border border-border rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-foreground"
                   />
                 </div>
                 <button
                   onClick={handleVerify}
                   disabled={loading || isVerified}
-                  className="px-8 bg-indigo-600 hover:bg-indigo-700 rounded-2xl font-bold transition-all disabled:opacity-50"
+                  className="px-8 bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl font-bold transition-all disabled:opacity-50"
                 >
                   {loading ? 'Verifying...' : isVerified ? 'Connected' : 'Connect'}
                 </button>
               </div>
 
               {domain && !isVerified && (
-                <div className="animate-fade-in bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
-                  <p className="text-sm text-gray-400">Please add the following DNS records to your domain provider:</p>
+                <div className="animate-fade-in bg-muted/50 border border-border rounded-2xl p-6 space-y-4">
+                  <p className="text-sm text-muted-foreground">Please add the following DNS records to your domain provider:</p>
                   <div className="grid grid-cols-3 gap-4 text-xs font-mono">
-                    <div className="text-gray-500 uppercase tracking-wider">Type</div>
-                    <div className="text-gray-500 uppercase tracking-wider">Host</div>
-                    <div className="text-gray-500 uppercase tracking-wider">Value</div>
+                    <div className="text-muted-foreground uppercase tracking-wider">Type</div>
+                    <div className="text-muted-foreground uppercase tracking-wider">Host</div>
+                    <div className="text-muted-foreground uppercase tracking-wider">Value</div>
                     
-                    <div className="bg-white/5 p-2 rounded">CNAME</div>
-                    <div className="bg-white/5 p-2 rounded">crm</div>
-                    <div className="bg-white/5 p-2 rounded">proxy.crmplatform.com</div>
+                    <div className="bg-background p-2 rounded border border-border">CNAME</div>
+                    <div className="bg-background p-2 rounded border border-border">crm</div>
+                    <div className="bg-background p-2 rounded border border-border">proxy.crmplatform.com</div>
                   </div>
                 </div>
               )}
@@ -95,14 +95,14 @@ export default function CustomDomainSettings() {
 
           {/* Help/Instruction */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="bg-[#111] p-6 rounded-3xl border border-white/5">
-                <h4 className="font-semibold mb-2">A Record Method</h4>
-                <p className="text-xs text-gray-500 mb-4">If you want to use a root domain (e.g. acmecrm.com), point your A record to:</p>
-                <code className="bg-black p-2 rounded text-indigo-400 text-sm block text-center">76.76.21.21</code>
+             <div className="glass-premium p-6 rounded-3xl border border-border">
+                <h4 className="font-semibold mb-2 text-foreground">A Record Method</h4>
+                <p className="text-xs text-muted-foreground mb-4">If you want to use a root domain (e.g. acmecrm.com), point your A record to:</p>
+                <code className="bg-muted p-2 rounded text-primary text-sm block text-center border border-border">76.76.21.21</code>
              </div>
-             <div className="bg-[#111] p-6 rounded-3xl border border-white/5">
-                <h4 className="font-semibold mb-2">Cloudflare Users</h4>
-                <p className="text-xs text-gray-500">Ensure 'Proxy' is turned OFF (Grey cloud) during the verification process.</p>
+             <div className="glass-premium p-6 rounded-3xl border border-border">
+                <h4 className="font-semibold mb-2 text-foreground">Cloudflare Users</h4>
+                <p className="text-xs text-muted-foreground">Ensure 'Proxy' is turned OFF (Grey cloud) during the verification process.</p>
              </div>
           </section>
         </div>

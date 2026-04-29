@@ -83,5 +83,50 @@ If you need to perform maintenance or reset the system, use these root-level com
 - **Technical Specs**: Refer to `CRM_PLANNING_DOCUMENT.md` for the original architecture plan.
 - **UI Styling**: Powered by "glass-premium" CSS tokens and modern Tailwind/Vanilla CSS.
 
+## 🔍 Global Search System
+
+The platform features a production-grade Global Search accessible from the topbar (press `/` to focus).
+
+### What you can search:
+- **Contacts**: Search by Name or Email.
+- **Deals**: Search by Title or Company Name.
+- **Tasks**: Search by Task Title.
+
+### How it works:
+1. **Frontend**: Uses a debounced (300ms) fetch mechanism to prevent API flooding.
+2. **Gateway**: Routes requests to the CRM microservice via `/api/v1/crm/search`.
+3. **Backend**: Performs concurrent database queries across three tables (Contacts, Deals, Tasks) and returns a unified result set.
+4. **Navigation**: Clicking a result instantly routes you to the relevant dashboard section.
+
+## 📋 Task Management (Kanban)
+A production-ready Trello-style board for managing your team's workflow.
+
+### Working Process:
+1. **Access**: Navigate to the **Tasks** module in the sidebar.
+2. **Kanban View**: Tasks are automatically grouped into **To Do**, **In Progress**, and **Completed** columns.
+3. **Create Task**: Click **"Create Task"** to add a new item with priority, due date, and detailed description.
+4. **Interactive Checklists**: Descriptions support checkable feature lists for granular progress tracking.
+5. **Real-time Updates**: Status changes are instantly persisted to the backend CRM service.
+
+## 📊 Dashboard Personalization (Switchery)
+Tailor your experience by choosing which metrics matter most to you.
+
+### Working Process:
+1. **Access**: Navigate to **Workspace** -> **Dashboard Stats** in the sidebar.
+2. **Toggle Metrics**: Use the **"Statistic Switchery"** to enable or disable cards like Revenue Analytics, Active Deals, or Conversion Rate.
+3. **Save**: Click **"Save Configuration"** to persist your preferences.
+4. **Instant Reflect**: The main dashboard will instantly update its layout based on your selections.
+
+## 🤖 AI Sales Agent Training
+The platform includes an autonomous AI agent that can be trained on your specific business data.
+
+### Training Process:
+1. **Access**: Navigate to the **AI Sales Agent** tab in the dashboard.
+2. **Knowledge Base**: Click on **"Knowledge Base"** then **"Train Agent"**.
+3. **Ingest Data**: Upload or paste the text content from your SOPs, Product Specs, or Pitch Decks.
+4. **Autonomous Context**: Once ingested, the AI will automatically search this knowledge base when answering chat queries or analyzing deals, providing context-aware recommendations based on your company's internal policies.
+
+---
+
 **The system is live and ready for deployment.**  
-*Built with ❤️ by the Antigravity Team*
+*Powered by CRM Pro v2.0*

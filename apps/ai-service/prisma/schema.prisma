@@ -37,3 +37,28 @@ model AIInsight {
   @@index([entityId])
   @@map("ai_insights")
 }
+
+model Knowledge {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  fileName  String   @map("file_name")
+  content   String   // Extracted text
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("knowledge")
+}
+
+model AIConfiguration {
+  id            String   @id @default(uuid())
+  tenantId      String   @unique @map("tenant_id") // Can be "GLOBAL" for platform-wide keys
+  provider      String   // OPENAI, GEMINI, ANTHROPIC, GROK
+  apiKey        String   @map("api_key")
+  modelName     String   @default("gpt-4o") @map("model_name")
+  isActive      Boolean  @default(true) @map("is_active")
+  settings      Json     @default("{}") // Additional provider-specific settings
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_configurations")
+}

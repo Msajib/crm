@@ -7,7 +7,7 @@ import { CrmService } from './crm.service';
 import {
   CreateContactDto, UpdateContactDto,
   CreateDealDto, UpdateDealDto,
-  CreatePipelineDto, CreateTaskDto,
+  CreatePipelineDto, CreateTaskDto, UpdateTaskDto,
 } from './dto/crm.dto';
 
 @ApiTags('crm')
@@ -21,6 +21,16 @@ export class CrmController {
   @ApiOperation({ summary: 'Get dashboard overview stats' })
   async getDashboardStats(@Headers('x-tenant-id') tenantId: string) {
     return this.crmService.getDashboardStats(tenantId);
+  }
+
+  @Get('crm/search')
+  @ApiOperation({ summary: 'Global search across contacts, deals, and tasks' })
+  @ApiQuery({ name: 'q', required: true })
+  async search(
+    @Headers('x-tenant-id') tenantId: string,
+    @Query('q') q: string,
+  ) {
+    return this.crmService.search(tenantId, q);
   }
 
   // ─── Contacts ────────────────────────────────────────────────
@@ -67,6 +77,17 @@ export class CrmController {
     @Body() dto: UpdateContactDto,
   ) {
     return this.crmService.updateContact(id, tenantId, dto);
+  }
+
+  @Post('contacts/:id/convert')
+  @ApiOperation({ summary: 'Convert lead to deal' })
+  async convertLead(
+    @Headers('x-tenant-id') tenantId: string,
+    @Headers('x-user-id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: any,
+  ) {
+    return this.crmService.convertLeadToDeal(id, tenantId, userId, dto);
   }
 
   @Delete('contacts/:id')
@@ -149,6 +170,28 @@ export class CrmController {
     return this.crmService.updateDeal(id, tenantId, dto);
   }
 
+  @Delete('deals/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a deal' })
+  async deleteDeal(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.crmService.deleteDeal(id, tenantId);
+  }
+
+  // ─── Bulk Operations ─────────────────────────────────────────
+  @Post(':module/import')
+  @ApiOperation({ summary: 'Bulk import records from CSV/JSON' })
+  async importRecords(
+    @Headers('x-tenant-id') tenantId: string,
+    @Headers('x-user-id') userId: string,
+    @Param('module') module: string,
+    @Body() body: any[],
+  ) {
+    return this.crmService.importRecords(tenantId, userId, module, body);
+  }
+
   // ─── Tasks ───────────────────────────────────────────────────
   @Post('tasks')
   @ApiOperation({ summary: 'Create a task' })
@@ -180,5 +223,34 @@ export class CrmController {
     @Param('id') id: string,
   ) {
     return this.crmService.completeTask(id, tenantId);
+  }
+
+  @Get('tasks/:id')
+  @ApiOperation({ summary: 'Get a specific task' })
+  async getTask(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.crmService.getTask(id, tenantId);
+  }
+
+  @Put('tasks/:id')
+  @ApiOperation({ summary: 'Update a task' })
+  async updateTask(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateTaskDto,
+  ) {
+    return this.crmService.updateTask(id, tenantId, dto);
+  }
+
+  @Delete('tasks/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a task' })
+  async deleteTask(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.crmService.deleteTask(id, tenantId);
   }
 }

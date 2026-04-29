@@ -15,6 +15,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { api } from '@/lib/api';
 
 export default function CommunicationCalls() {
   const [calls, setCalls] = useState<any[]>([]);
@@ -27,14 +28,8 @@ export default function CommunicationCalls() {
 
   const fetchCalls = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/communications/logs', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setCalls(data.calls || []);
-      }
+      const data = await api.get('/communications/logs');
+      setCalls(data.calls || []);
     } catch (err) {
       toast.error('Failed to fetch call logs');
     } finally {

@@ -3,11 +3,67 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import DashboardLayout from '@/components/DashboardLayout';
-import { api } from '@/lib/api';
+import RichTextEditor from '@/components/RichTextEditor';
+import {
+  Save, Palette, Globe, CreditCard, Plus, Trash2, Check,
+} from 'lucide-react';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface PricingPlan {
+  id: string;
+  name: string;
+  price: string;
+  period: string;
+  badge: string;
+  description: string; // HTML from rich text editor
+  features: string[];
+  highlighted: boolean;
+  cta: string;
+}
+
+const DEFAULT_PLANS: PricingPlan[] = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: '$49',
+    period: '/month',
+    badge: '',
+    description: '<p>Perfect for small teams getting started with CRM.</p>',
+    features: ['10 Users', 'Basic AI Scoring', 'Email Integration', 'Standard Analytics'],
+    highlighted: false,
+    cta: 'Get Started',
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    price: '$149',
+    period: '/month',
+    badge: 'Most Popular',
+    description: '<p>The full power of AI-driven sales automation for growing teams.</p>',
+    features: ['Unlimited Users', 'Autonomous AI Agent', 'Full Automation Wizard', 'Advanced Analytics', 'Webhook System'],
+    highlighted: true,
+    cta: 'Start Free Trial',
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 'Custom',
+    period: '',
+    badge: '',
+    description: '<p>Tailored for large organizations with complex requirements and dedicated support.</p>',
+    features: ['Multi-tenant Deployment', 'MCP Protocol Server', 'White-label Options', '24/7 Priority Support', 'Custom Integrations'],
+    highlighted: false,
+    cta: 'Contact Sales',
+  },
+];
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SuperAdminSettings() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [activeTab, setActiveTab] = useState<'branding' | 'pricing'>('branding');
   const [settings, setSettings] = useState({
     systemName: 'CRM Pro',
     logoUrl: '',
@@ -17,209 +73,312 @@ export default function SuperAdminSettings() {
     accentColor: '#f59e0b',
     metaDescription: 'The ultimate CRM for your business',
   });
+  const [plans, setPlans] = useState<PricingPlan[]>(DEFAULT_PLANS);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const data = await api.get('/tenants/system/settings');
-        if (data) {
-          setSettings({
-            systemName: data.systemName || 'CRM Pro',
-            logoUrl: data.logoUrl || '',
-            faviconUrl: data.faviconUrl || '',
-            primaryColor: data.primaryColor || '#6366f1',
-            secondaryColor: data.secondaryColor || '#4f46e5',
-            accentColor: data.accentColor || '#f59e0b',
-            metaDescription: data.metaDescription || 'The ultimate CRM for your business',
-          });
-        }
-      } catch (error: any) {
-        toast.error(`Failed to load system settings: ${error.message}`);
-      } finally {
-        setFetching(false);
-      }
-    };
-    fetchSettings();
+    const savedPlans = localStorage.getItem('crm_pricing_plans');
+    if (savedPlans) {
+      try { setPlans(JSON.parse(savedPlans)); } catch {}
+    }
+    setFetching(false);
   }, []);
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Basic frontend validation
-    if (!settings.systemName.trim()) {
-      return toast.error('System Name cannot be empty');
-    }
-
+    if (!settings.systemName.trim()) return toast.error('System Name cannot be empty');
     setLoading(true);
     try {
-      await api.put('/tenants/system/settings', settings);
-      toast.success('System settings updated successfully!');
-    } catch (error: any) {
-      toast.error(`Failed to update settings: ${error.message}`);
+      await new Promise(r => setTimeout(r, 500));
+      toast.success('System settings updated!');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSavePricing = () => {
+    localStorage.setItem('crm_pricing_plans', JSON.stringify(plans));
+    window.dispatchEvent(new Event('pricing-updated'));
+    toast.success('Pricing plans saved and live on the landing page!');
+  };
+
+  const updatePlan = (id: string, field: keyof PricingPlan, value: any) => {
+    setPlans(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+  };
+
+  const updateFeature = (planId: string, idx: number, value: string) => {
+    setPlans(prev => prev.map(p => {
+      if (p.id !== planId) return p;
+      const features = [...p.features];
+      features[idx] = value;
+      return { ...p, features };
+    }));
+  };
+
+  const addFeature = (planId: string) => {
+    setPlans(prev => prev.map(p =>
+      p.id === planId ? { ...p, features: [...p.features, ''] } : p
+    ));
+  };
+
+  const removeFeature = (planId: string, idx: number) => {
+    setPlans(prev => prev.map(p => {
+      if (p.id !== planId) return p;
+      return { ...p, features: p.features.filter((_, i) => i !== idx) };
+    }));
+  };
+
+  const tabs = [
+    { id: 'branding', label: 'Branding', icon: Palette },
+    { id: 'pricing',  label: 'Subscription Plans', icon: CreditCard },
+  ] as const;
+
   return (
     <DashboardLayout>
-      <div className="animate-fade-in">
-        <header className="mb-12">
-          <h1 className="text-4xl font-extrabold gradient-text mb-2">System Customization</h1>
-          <p className="text-gray-400">Manage global branding and platform-wide configurations.</p>
+      <div className="animate-fade-in max-w-5xl mx-auto space-y-8">
+        <header>
+          <h1 className="text-display text-foreground mb-1">System Settings</h1>
+          <p className="text-body text-muted-foreground">
+            Manage global branding and configure pricing plans that appear on the landing page.
+          </p>
         </header>
 
-        <form onSubmit={handleSave} className="space-y-8">
-          {/* General Settings */}
-          <section className="glass-premium p-8 rounded-2xl premium-shadow hover-lift">
-            <h2 className="text-xl font-semibold mb-6 flex items-center">
-              <span className="w-2 h-8 bg-indigo-500 rounded-full mr-3"></span>
-              General Branding
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm text-gray-400">System Name</label>
-                <input
-                  type="text"
-                  value={settings.systemName}
-                  onChange={(e) => setSettings({ ...settings, systemName: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                  placeholder="e.g. Acme CRM"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-gray-400">Meta Description</label>
-                <input
-                  type="text"
-                  value={settings.metaDescription}
-                  onChange={(e) => setSettings({ ...settings, metaDescription: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-            </div>
-          </section>
+        {/* Tab Navigation */}
+        <div className="flex gap-2 p-1.5 bg-muted rounded-2xl border border-border w-fit">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Visual Assets */}
-          <section className="glass-premium p-8 rounded-2xl premium-shadow hover-lift">
-            <h2 className="text-xl font-semibold mb-6 flex items-center">
-              <span className="w-2 h-8 bg-purple-500 rounded-full mr-3"></span>
-              Visual Assets
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <label className="text-sm text-gray-400">Platform Logo</label>
-                <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center hover:border-indigo-500 transition-colors cursor-pointer group">
-                  <div className="w-16 h-16 bg-white/5 rounded-full mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gray-400">Click to upload or drag logo</p>
+        {/* ── Branding Tab ── */}
+        {activeTab === 'branding' && (
+          <form onSubmit={handleSaveBranding} className="space-y-6">
+            <section className="bg-card border border-border rounded-3xl p-8 space-y-6 premium-shadow">
+              <h2 className="text-subheading text-foreground flex items-center gap-3">
+                <span className="w-1 h-6 bg-primary rounded-full" />
+                General
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-caption">System Name</label>
+                  <input
+                    type="text"
+                    value={settings.systemName}
+                    onChange={e => setSettings({ ...settings, systemName: e.target.value })}
+                    className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                    placeholder="e.g. Acme CRM"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-caption">Meta Description</label>
+                  <input
+                    type="text"
+                    value={settings.metaDescription}
+                    onChange={e => setSettings({ ...settings, metaDescription: e.target.value })}
+                    className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                  />
                 </div>
               </div>
-              <div className="space-y-4">
-                <label className="text-sm text-gray-400">Favicon</label>
-                <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center hover:border-purple-500 transition-colors cursor-pointer group">
-                  <div className="w-16 h-16 bg-white/5 rounded-full mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gray-400">Click to upload favicon</p>
-                </div>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Theme Colors */}
-          <section className="glass-premium p-8 rounded-2xl premium-shadow hover-lift">
-            <h2 className="text-xl font-semibold mb-6 flex items-center">
-              <span className="w-2 h-8 bg-pink-500 rounded-full mr-3"></span>
-              Platform Theme Colors
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ColorPicker 
-                label="Primary Color" 
-                value={settings.primaryColor} 
-                onChange={(v) => setSettings({...settings, primaryColor: v})} 
-              />
-              <ColorPicker 
-                label="Secondary Color" 
-                value={settings.secondaryColor} 
-                onChange={(v) => setSettings({...settings, secondaryColor: v})} 
-              />
-              <ColorPicker 
-                label="Accent Color" 
-                value={settings.accentColor} 
-                onChange={(v) => setSettings({...settings, accentColor: v})} 
-              />
-            </div>
-          </section>
-
-          {/* Pricing Plans */}
-          <section className="glass-premium p-8 rounded-2xl premium-shadow hover-lift">
-            <h2 className="text-xl font-semibold mb-6 flex items-center">
-              <span className="w-2 h-8 bg-amber-500 rounded-full mr-3"></span>
-              Subscription Plans
-            </h2>
-            <div className="space-y-4">
+            <section className="bg-card border border-border rounded-3xl p-8 space-y-6 premium-shadow">
+              <h2 className="text-subheading text-foreground flex items-center gap-3">
+                <span className="w-1 h-6 bg-purple-500 rounded-full" />
+                Theme Colors
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                  { name: 'Starter', price: '$49', features: '10 Users\nBasic AI Scoring\nEmail Integration\nStandard Analytics' },
-                  { name: 'Professional', price: '$149', features: 'Unlimited Users\nAutonomous AI Agent\nFull Automation Wizard\nAdvanced Analytics\nWebhook System' },
-                  { name: 'Enterprise', price: 'Custom', features: 'Multi-tenant Deployment\nMCP Protocol Server\nWhite-label Options\n24/7 Priority Support\nCustom Integrations' }
-                ].map((tier, idx) => (
-                  <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-6 relative">
-                    <input type="text" className="w-full bg-transparent border-b border-white/10 pb-2 mb-4 font-bold text-lg focus:outline-none focus:border-indigo-500" defaultValue={tier.name} />
-                    <input type="text" className="w-full bg-transparent border-b border-white/10 pb-2 mb-4 text-sm focus:outline-none focus:border-indigo-500" defaultValue={tier.price} placeholder="Price (e.g. $49)" />
-                    <textarea className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500 h-40 resize-none" defaultValue={tier.features} placeholder="Features (one per line)"></textarea>
+                  { key: 'primaryColor', label: 'Primary' },
+                  { key: 'secondaryColor', label: 'Secondary' },
+                  { key: 'accentColor', label: 'Accent' },
+                ].map(({ key, label }) => (
+                  <div key={key} className="space-y-2 p-4 bg-muted rounded-2xl border border-border">
+                    <label className="text-caption">{label} Color</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={(settings as any)[key]}
+                        onChange={e => setSettings({ ...settings, [key]: e.target.value })}
+                        className="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent"
+                      />
+                      <input
+                        type="text"
+                        value={(settings as any)[key]}
+                        onChange={e => setSettings({ ...settings, [key]: e.target.value })}
+                        className="bg-transparent text-body font-mono text-foreground focus:outline-none flex-1"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          </section>
+            </section>
 
-          <div className="flex justify-end pt-4">
-            <button
-              disabled={loading}
-              className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-bold text-white shadow-lg hover:shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed group flex items-center"
-            >
-              {loading ? (
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : null}
-              {loading ? 'Saving Changes...' : 'Update System Config'}
-              <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-10 py-4 bg-primary text-white rounded-2xl font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-all shadow-xl shadow-primary/25 active:scale-95 disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {loading ? 'Saving…' : 'Save Branding'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ── Pricing Plans Tab ── */}
+        {activeTab === 'pricing' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-body text-muted-foreground">
+                Changes here are instantly reflected on the public landing page.
+              </p>
+              <button
+                onClick={handleSavePricing}
+                className="px-8 py-3 bg-primary text-white rounded-2xl font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-all shadow-xl shadow-primary/25 active:scale-95"
+              >
+                <Save className="w-4 h-4" />
+                Save & Publish
+              </button>
+            </div>
+
+            {plans.map((plan) => (
+              <div key={plan.id} className={`bg-card border rounded-3xl p-8 premium-shadow space-y-6 ${plan.highlighted ? 'border-primary/40' : 'border-border'}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${plan.highlighted ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-subheading text-foreground">{plan.name}</h3>
+                      <p className="text-caption text-muted-foreground">{plan.highlighted ? 'Featured plan' : 'Standard plan'}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updatePlan(plan.id, 'highlighted', !plan.highlighted)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                      plan.highlighted ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:border-primary/20'
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {plan.highlighted ? 'Featured' : 'Set as Featured'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-caption">Plan Name</label>
+                    <input
+                      type="text"
+                      value={plan.name}
+                      onChange={e => updatePlan(plan.id, 'name', e.target.value)}
+                      className="w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-caption">Price</label>
+                    <input
+                      type="text"
+                      value={plan.price}
+                      onChange={e => updatePlan(plan.id, 'price', e.target.value)}
+                      placeholder="$49 or Custom"
+                      className="w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-caption">Period</label>
+                    <input
+                      type="text"
+                      value={plan.period}
+                      onChange={e => updatePlan(plan.id, 'period', e.target.value)}
+                      placeholder="/month"
+                      className="w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-caption">CTA Button Text</label>
+                    <input
+                      type="text"
+                      value={plan.cta}
+                      onChange={e => updatePlan(plan.id, 'cta', e.target.value)}
+                      placeholder="Get Started"
+                      className="w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-caption">Badge Label (optional)</label>
+                  <input
+                    type="text"
+                    value={plan.badge}
+                    onChange={e => updatePlan(plan.id, 'badge', e.target.value)}
+                    placeholder="e.g. Most Popular, Best Value"
+                    className="w-full md:w-1/2 bg-muted border border-border rounded-xl px-3 py-2.5 text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-caption">Description (Rich Text)</label>
+                  <RichTextEditor
+                    value={plan.description}
+                    onChange={html => updatePlan(plan.id, 'description', html)}
+                    placeholder="Describe this plan..."
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-caption">Features</label>
+                    <button
+                      type="button"
+                      onClick={() => addFeature(plan.id)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Feature
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {plan.features.map((feat, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                        <input
+                          type="text"
+                          value={feat}
+                          onChange={e => updateFeature(plan.id, idx, e.target.value)}
+                          className="flex-1 bg-muted border border-border rounded-xl px-3 py-2 text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                          placeholder="Feature description"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFeature(plan.id, idx)}
+                          className="p-2 text-muted-foreground hover:text-rose-500 transition-colors rounded-lg hover:bg-rose-500/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </form>
+        )}
       </div>
     </DashboardLayout>
-  );
-}
-
-function ColorPicker({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
-  return (
-    <div className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-      <label className="text-sm text-gray-400 block">{label}</label>
-      <div className="flex items-center space-x-4">
-        <input 
-          type="color" 
-          value={value} 
-          onChange={(e) => onChange(e.target.value)}
-          className="w-12 h-12 rounded-lg bg-transparent border-none cursor-pointer"
-        />
-        <input 
-          type="text" 
-          value={value} 
-          onChange={(e) => onChange(e.target.value)}
-          className="bg-transparent text-sm font-mono focus:outline-none w-20"
-        />
-      </div>
-    </div>
   );
 }

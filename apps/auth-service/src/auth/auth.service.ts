@@ -15,11 +15,14 @@ import {
   ChangePasswordDto,
 } from './dto/auth.dto';
 
+import { ConfigService } from '@nestjs/config';
+
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   // ─── Register ────────────────────────────────────────────────
@@ -36,6 +39,11 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     // Create user
+    // First registration is ADMIN and gets a unique tenantId
+    const isFirstUser = (await this.prisma.user.count()) === 0;
+    const role = isFirstUser ? 'SUPER_ADMIN' : 'ADMIN';
+    const tenantId = role === 'SUPER_ADMIN' ? 'system' : (dto.tenantId || require('crypto').randomUUID());
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
@@ -43,8 +51,8 @@ export class AuthService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         phone: dto.phone,
-        tenantId: dto.tenantId || 'system', // Will be set by tenant service
-        role: 'ADMIN', // First registration is admin
+        tenantId,
+        role,
         permissions: [],
       },
     });
@@ -130,7 +138,7 @@ export class AuthService {
   async validateToken(token: string) {
     try {
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET,
+        secret: this.configService.get('JWT_SECRET'),
       });
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
@@ -183,15 +191,15 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: this.configService.get('JWT_EXPIRES_IN') || '15m',
     });
 
     const refreshTokenValue = this.jwtService.sign(
       { sub: user.id },
       {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d',
       },
     );
 
