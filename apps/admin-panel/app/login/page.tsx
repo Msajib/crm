@@ -32,18 +32,47 @@ export default function LoginPage() {
         
         // Also keep in localStorage for easy frontend access
         localStorage.setItem('token', data.accessToken);
-        localStorage.setItem('role', data.user.role);
         localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('role', data.user.role);
+        localStorage.setItem('tenant_id', data.user.tenantId);
+        
+        // Set cookies for middleware
+        document.cookie = `token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+        document.cookie = `role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
+        document.cookie = `permissions=${JSON.stringify(data.user.permissions || [])}; path=/; max-age=86400; SameSite=Lax`;
         
         toast.success('Authentication successful! Initializing workspace...');
         setTimeout(() => {
           window.location.href = '/dashboard';
         }, 800);
       } else {
-        const error = await response.json();
-        toast.error(`Access Denied: ${error.message || 'Invalid credentials'}`);
+        let errorMessage = 'Invalid credentials';
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            console.error('Failed to parse error JSON:', e);
+          }
+        } else {
+          // If response is not JSON (likely HTML), log it for debugging
+          const text = await response.text();
+          console.error('Non-JSON Error Response:', text.substring(0, 200));
+          if (response.status === 401) {
+            errorMessage = 'Invalid credentials';
+          } else if (response.status === 403) {
+            errorMessage = 'Access denied: account may be suspended';
+          } else {
+            errorMessage = response.status === 404 
+              ? 'API route not found (check Gateway/Proxy)' 
+              : `Server Error (${response.status})`;
+          }
+        }
+        toast.error(`Access Denied: ${errorMessage}`);
       }
     } catch (err) {
+      console.error('Login request failed:', err);
       toast.error('Connection Error: The authentication server is unreachable.');
     } finally {
       setIsLoading(false);

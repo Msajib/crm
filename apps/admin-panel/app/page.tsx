@@ -18,10 +18,13 @@ import {
   X,
   CreditCard,
   Lock,
-  Loader2
+  Loader2,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import { useTheme } from 'next-themes';
 
 const DEFAULT_PLANS = [
   {
@@ -81,6 +84,10 @@ const floatAnimation = {
 export default function LandingPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   // Load plans from localStorage to reflect admin changes instantly
   useEffect(() => {
@@ -129,6 +136,14 @@ export default function LandingPage() {
             <a href="#about" className="hover:text-primary transition-colors">About</a>
           </div>
           <div className="flex items-center space-x-4">
+            {mounted && (
+              <button 
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="p-3 bg-muted rounded-xl hover:bg-accent transition-all text-muted-foreground hover:text-primary"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+            )}
             <Link href="/login" className="text-sm font-bold text-muted-foreground uppercase tracking-widest hover:text-primary transition-colors">Login</Link>
             <Link href="/login" className="px-6 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95">Get Started</Link>
           </div>
@@ -488,7 +503,7 @@ function CheckoutModal({ plan, onClose }: any) {
       // Close after showing success and redirect to profile
       setTimeout(() => {
         onClose();
-        window.location.href = '/dashboard/settings/profile';
+        window.location.href = '/dashboard/settings?tab=profile';
       }, 3500);
     }, 2500);
   };

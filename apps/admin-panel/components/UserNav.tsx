@@ -101,11 +101,11 @@ export default function UserNav() {
         {/* Dropdown Menu */}
         <div className="absolute right-0 mt-3 w-64 bg-popover rounded-2xl border border-border p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
           <div className="px-4 py-3 border-b border-border mb-2 relative">
-            <p className="text-body font-bold text-foreground">{user ? `${user.firstName} ${user.lastName}` : 'John Doe'}</p>
-            <p className="text-caption text-muted-foreground">{user?.email || 'admin@crm.local'}</p>
-            <span className="absolute top-3 right-4 px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[8px] font-black uppercase">
-               {role}
-            </span>
+          <p className="text-body font-bold text-foreground">{user ? `${user.firstName} ${user.lastName}` : 'John Doe'}</p>
+          <p className="text-caption text-muted-foreground">{user?.email || 'admin@crm.local'}</p>
+          <span className="absolute top-3 right-4 px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[8px] font-black uppercase">
+             {(user as any)?.customRole?.name || role}
+          </span>
           </div>
 
           {isImpersonating && (
@@ -118,14 +118,14 @@ export default function UserNav() {
             </button>
           )}
           
-          <Link href="/dashboard/settings/profile" className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all group">
+          <Link href="/dashboard/super-admin/settings?tab=profile" className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all group">
             <User className="w-4 h-4 group-hover:text-primary transition-colors" />
             <span className="text-body font-semibold">My Profile</span>
           </Link>
           
-          <Link href="/dashboard/settings/branding" className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all group">
+          <Link href="/dashboard/super-admin/settings?tab=branding" className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all group">
             <Settings className="w-4 h-4 group-hover:text-primary transition-colors" />
-            <span className="text-body font-semibold">Account Settings</span>
+            <span className="text-body font-semibold">System Settings</span>
           </Link>
 
           <div className="mt-2 pt-2 border-t border-border">

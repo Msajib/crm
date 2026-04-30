@@ -5,6 +5,9 @@
                             "incremental":  true,
                             "baseUrl":  "./",
                             "module":  "commonjs",
-                            "declaration":  true
+                            "declaration":  true,
+                            "paths": {
+                                "@prisma/analytics-client": ["../../node_modules/@prisma/analytics-client"]
+                            }
                         }
 }

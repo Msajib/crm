@@ -32,10 +32,15 @@ export class CreateUserDto {
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ example: 'Sales Executive' })
+  @ApiPropertyOptional({ example: 'uuid-of-custom-role' })
   @IsOptional()
   @IsString()
-  customRole?: string;
+  customRoleId?: string;
+
+  @ApiPropertyOptional({ enum: UserRoleDto })
+  @IsOptional()
+  @IsEnum(UserRoleDto)
+  role?: UserRoleDto;
 
   @ApiPropertyOptional({
     example: ['contacts:view', 'deals:view'],
@@ -66,7 +71,12 @@ export class UpdateUserDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  customRole?: string;
+  customRoleId?: string;
+
+  @ApiPropertyOptional({ enum: UserRoleDto })
+  @IsOptional()
+  @IsEnum(UserRoleDto)
+  role?: UserRoleDto;
 
   @ApiPropertyOptional({ isArray: true, type: String })
   @IsOptional()

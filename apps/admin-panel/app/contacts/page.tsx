@@ -24,6 +24,7 @@ import ContactDetailSidebar from '@/components/ContactDetailSidebar';
 import ActionDropdown from '@/components/ActionDropdown';
 import ModuleGuard from '@/components/ModuleGuard';
 import PremiumModal from '@/components/PremiumModal';
+import ImportModal from '@/components/ImportModal';
 
 
 export default function ContactsPage() {
@@ -36,6 +37,7 @@ export default function ContactsPage() {
 
 function ContactsContent() {
   const [contacts, setContacts] = useState<any[]>([]);
+  const [staffList, setStaffList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -50,24 +52,27 @@ function ContactsContent() {
     address: '',
     source: 'Website'
   });
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const fetchContacts = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/contacts', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const [contactsRes, staffRes] = await Promise.all([
+        fetch('/api/contacts', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/users/staff', { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+      
+      if (contactsRes.ok) {
+        const data = await contactsRes.json();
         setContacts(data.data || []);
-      } else {
-        const errorData = await res.json();
-        console.error('Fetch error:', errorData);
-        toast.error(errorData.message || 'Failed to load contacts');
+      }
+      if (staffRes.ok) {
+        const data = await staffRes.json();
+        setStaffList(data.data || []);
       }
     } catch (err) {
-      toast.error('Failed to load contacts');
+      toast.error('Failed to load contact data');
     } finally {
       setLoading(false);
     }
@@ -145,7 +150,10 @@ function ContactsContent() {
             <p className="text-muted-foreground text-sm font-medium">Manage and track your customer relationships with AI lead scoring.</p>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="p-4 bg-muted hover:bg-muted/80 rounded-2xl transition-all text-muted-foreground">
+            <button 
+              onClick={() => setShowImportModal(true)}
+              className="p-4 bg-muted hover:bg-muted/80 rounded-2xl transition-all text-muted-foreground"
+            >
                <Upload className="w-5 h-5" />
             </button>
             <button 
@@ -182,7 +190,7 @@ function ContactsContent() {
         </div>
 
         {/* Table */}
-        <div className="glass-card rounded-[40px] border border-border overflow-hidden bg-background/40 shadow-2xl">
+        <div className="glass-card rounded-[40px] border border-border overflow-visible bg-background/40 shadow-2xl">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-border bg-muted/20">
@@ -271,7 +279,7 @@ function ContactsContent() {
 
 
       {viewingContact && (
-        <ContactDetailSidebar contact={viewingContact} onClose={() => setViewingContact(null)} />
+        <ContactDetailSidebar contact={viewingContact} staffList={staffList} onClose={() => setViewingContact(null)} />
       )}
 
       {/* Add Contact Modal */}
@@ -319,20 +327,67 @@ function ContactsContent() {
         )}
       >
         {editContact && (
-          <form onSubmit={handleEditSubmit} className="space-y-8">
+          <form id="edit-contact-form" onSubmit={handleEditSubmit} className="space-y-6">
              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">First Name</label>
-                   <input required value={editContact.firstName} onChange={e => setEditContact({...editContact, firstName: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+                   <input required value={editContact.firstName || ''} onChange={e => setEditContact({...editContact, firstName: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
                 </div>
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Last Name</label>
-                   <input required value={editContact.lastName} onChange={e => setEditContact({...editContact, lastName: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+                   <input required value={editContact.lastName || ''} onChange={e => setEditContact({...editContact, lastName: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+                </div>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Email</label>
+                   <input required value={editContact.email || ''} onChange={e => setEditContact({...editContact, email: e.target.value})} type="email" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Phone</label>
+                   <input value={editContact.phone || ''} onChange={e => setEditContact({...editContact, phone: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Job Title</label>
+                   <input value={editContact.jobTitle || ''} onChange={e => setEditContact({...editContact, jobTitle: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Source</label>
+                   <input value={editContact.source || ''} onChange={e => setEditContact({...editContact, source: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" placeholder="e.g. Website, Referral" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Status</label>
+                   <select value={editContact.status || 'LEAD'} onChange={e => setEditContact({...editContact, status: e.target.value})} className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all appearance-none">
+                     <option value="LEAD">Lead</option>
+                     <option value="CUSTOMER">Customer</option>
+                     <option value="CHURNED">Churned</option>
+                   </select>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Address</label>
+                   <input value={editContact.address || ''} onChange={e => setEditContact({...editContact, address: e.target.value})} type="text" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
                 </div>
              </div>
           </form>
         )}
       </PremiumModal>
+      {/* Import Modal */}
+      {showImportModal && (
+        <ImportModal 
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            fetchContacts();
+            setShowImportModal(false);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }

@@ -52,4 +52,9 @@ export class AppController {
   async getInvoices() {
     return this.paymentService.getAllInvoices();
   }
+
+  @Get('invoices/tenant')
+  async getTenantInvoices(@Headers('x-tenant-id') tenantId: string) {
+    return this.paymentService.getTenantInvoices(tenantId);
+  }
 }

@@ -64,12 +64,22 @@ async function request(endpoint: string, options: RequestInit = {}) {
     throw new ApiError(response.status, errorData.message || 'API Request Failed', errorData);
   }
 
-  // Handle 204 No Content
+  // Handle 204 No Content or empty bodies
   if (response.status === 204) {
     return null;
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text);
+    return text; // Return as text if not valid JSON
+  }
 }
 
 export const api = {

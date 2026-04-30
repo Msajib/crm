@@ -17,12 +17,15 @@ import {
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function EmailTemplates() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const { role } = useAuth();
+  const isSuperAdmin = role?.toUpperCase() === 'SUPER_ADMIN';
 
   useEffect(() => {
     fetchTemplates();
@@ -30,8 +33,17 @@ export default function EmailTemplates() {
 
   const fetchTemplates = async () => {
     try {
-      const data = await api.get('/communications/templates');
-      setTemplates(data || []);
+      const [tenantTemplates, systemTemplates] = await Promise.all([
+        api.get('/communications/templates'),
+        isSuperAdmin ? api.get('/tenants/system/templates') : Promise.resolve([])
+      ]);
+      
+      const merged = [
+        ...(systemTemplates || []).map((t: any) => ({ ...t, isSystem: true })),
+        ...(tenantTemplates || [])
+      ];
+      
+      setTemplates(merged);
     } catch (err) {
       toast.error('Failed to fetch templates');
     } finally {
@@ -137,7 +149,7 @@ export default function EmailTemplates() {
                    </span>
                    <div className="flex items-center space-x-2 text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-xl">
                       <Sparkles className="w-3 h-3" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Ready</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">{tpl.isSystem ? 'System' : 'Ready'}</span>
                    </div>
                 </div>
              </div>

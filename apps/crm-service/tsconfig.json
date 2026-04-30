@@ -15,6 +15,9 @@
                             "removeComments":  true,
                             "experimentalDecorators":  true,
                             "strictBindCallApply":  false,
-                            "noFallbackArgs":  false
+                            "noFallbackArgs":  false,
+                            "paths": {
+                                "@prisma/crm-client": ["../../node_modules/@prisma/crm-client"]
+                            }
                         }
 }

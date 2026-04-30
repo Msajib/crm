@@ -2,10 +2,14 @@
     "compilerOptions":  {
                             "target": "ES2022",
                             "experimentalDecorators":  true,
+                            "emitDecoratorMetadata": true,
                             "outDir":  "./dist",
                             "incremental":  true,
                             "baseUrl":  "./",
                             "module":  "commonjs",
-                            "declaration":  true
+                            "declaration":  true,
+                            "paths": {
+                                "@prisma/marketing-client": ["../../node_modules/@prisma/marketing-client"]
+                            }
                         }
 }

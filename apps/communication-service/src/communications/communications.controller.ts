@@ -133,4 +133,23 @@ export class CommunicationsController {
   async updateNotes(@Headers('x-tenant-id') tenantId: string, @Param('id') conversationId: string, @Body() body: { notes: string }) {
     return this.commsService.updateConversationNotes(tenantId, conversationId, body.notes);
   }
+
+  // ─── Internal Notification Endpoints ────────────────────────
+  @Post('notifications/internal/send-email')
+  @ApiOperation({ summary: 'Internal: Send email (called by other services)' })
+  async internalSendEmail(@Body() body: any) {
+    const { tenantId, to, subject, message } = body;
+    return this.commsService.sendEmail(tenantId, { to, subject, body: message });
+  }
+
+  @Post('notifications/internal/import-complete')
+  @ApiOperation({ summary: 'Internal: Import completion notification' })
+  async internalImportComplete(@Body() body: any) {
+    const { tenantId, userId, stats } = body;
+    return this.commsService.notify(tenantId, {
+      title: 'Import Completed',
+      message: `Your import of ${stats.fileName} is finished. ${stats.successCount} success, ${stats.failedCount} failed.`,
+      type: 'IMPORT_COMPLETE',
+    });
+  }
 }

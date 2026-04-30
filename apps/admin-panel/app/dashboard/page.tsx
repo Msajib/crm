@@ -163,7 +163,7 @@ export default function DashboardPage() {
                      <div className="h-2 bg-muted rounded-full overflow-hidden border border-border mb-2">
                         <div 
                           className="h-full bg-amber-500 shadow-lg shadow-amber-500/30 transition-all duration-1000"
-                          style={{ width: `${(camp.processedCount / (camp.leadIds?.length || 1)) * 100}%` }}
+                          style={{ width: `${Math.max(0, Math.min(100, (camp.processedCount / (camp.leadIds?.length || 1)) * 100)) || 0}%` }}
                         ></div>
                      </div>
                      <p className="text-[10px] text-right text-muted-foreground font-black italic">

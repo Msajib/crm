@@ -13,6 +13,9 @@ Welcome to **CRM Pro**, a production-ready, autonomous SaaS CRM platform. This s
   - **Super Admins**: Global oversight of the entire tenant ecosystem.
   - **Tenant Admins**: Localized control over workspace settings and modules.
 - **Hierarchical Feature Toggling**: Real-time module visibility control for both Super Admins and Tenant Admins.
+- **Advanced Role Management**: Full CRUD for custom security roles with user assignment tracking.
+- **Subscription Expiry Enforcement**: Automated notification system and login blocking for expired tenants.
+- **Bulk Contacts Import**: High-performance background processing microservice (BullMQ + Redis) for large-scale data ingestion.
 - **Autonomous AI Agent**: Backend integration for lead scoring and deal insights.
 
 ---
@@ -51,7 +54,10 @@ This project uses **Turborepo** to manage and run all services simultaneously.
 # From the project root
 npm run dev
 ```
-*This will boot the API Gateway (3000), Auth Service (3001), Tenant Service (3002), CRM Service (3003), and the Admin Panel (3100).*
+*This will boot the API Gateway (3000), Auth Service (3001), Tenant Service (3002), CRM Service (3003), Import Service (3009), and the Admin Panel (3100).*
+
+### 3. Redis Requirement
+The bulk import system requires **Redis** for the job queue. Ensure Redis is running on port **6379**.
 
 ### 3. Access the App
 Open your browser and navigate to **`http://localhost:3100`**.
@@ -74,6 +80,8 @@ If you need to perform maintenance or reset the system, use these root-level com
 - **Auth Service (Port 3001)**: Handles JWT issuance, RBAC, and user management.
 - **Tenant Service (Port 3002)**: Manages organization profiles, subscriptions, and module settings.
 - **CRM Service (Port 3003)**: Core logic for Contacts, Deals, Tasks, and Pipelines.
+- **Communication Service (Port 3004)**: Email, SMS, and in-app notifications.
+- **Import Service (Port 3009)**: High-performance background import engine.
 - **Admin Panel (Port 3100)**: The Next.js frontend interface.
 
 ---
@@ -117,14 +125,19 @@ Tailor your experience by choosing which metrics matter most to you.
 3. **Save**: Click **"Save Configuration"** to persist your preferences.
 4. **Instant Reflect**: The main dashboard will instantly update its layout based on your selections.
 
-## 🤖 AI Sales Agent Training
-The platform includes an autonomous AI agent that can be trained on your specific business data.
+## ⏰ Subscription Lifecycle Scheduler
+The system includes an automated background job that monitors tenant subscription expiry dates.
 
-### Training Process:
-1. **Access**: Navigate to the **AI Sales Agent** tab in the dashboard.
-2. **Knowledge Base**: Click on **"Knowledge Base"** then **"Train Agent"**.
-3. **Ingest Data**: Upload or paste the text content from your SOPs, Product Specs, or Pitch Decks.
-4. **Autonomous Context**: Once ingested, the AI will automatically search this knowledge base when answering chat queries or analyzing deals, providing context-aware recommendations based on your company's internal policies.
+### How it Works:
+1. **Frequency**: Runs every day at midnight (UTC).
+2. **Warning Notice (3 Days Before)**: Identifies tenants expiring in exactly 3 days and sends the `expiryWarningTemplate` email to the tenant admin.
+3. **Final Notice (Day 0)**: Identifies tenants expiring today and sends the `expiryFinalTemplate` email.
+4. **Enforcement**: If a tenant's `expiresAt` date has passed, the Auth Service will automatically block login attempts until the subscription is extended.
+
+### Configuration:
+- **Service**: The scheduler is hosted within the **Tenant Service** (`apps/tenant-service`).
+- **Templates**: Super Admins can customize the warning and final notice messages via **Super Admin -> System Settings -> Email Templates**.
+- **Server Setup**: Ensure the `tenant-service` process is always running. No external crontab is required as it uses internal NestJS scheduling.
 
 ---
 

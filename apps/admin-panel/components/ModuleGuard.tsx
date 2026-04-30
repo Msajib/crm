@@ -11,7 +11,7 @@ interface ModuleGuardProps {
   children: React.ReactNode;
 }
 
-export default function ModuleGuard({ moduleId, children }: ModuleGuardProps) {
+export function ModuleGuard({ moduleId, children }: ModuleGuardProps) {
   const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
   const router = useRouter();
 
@@ -19,14 +19,19 @@ export default function ModuleGuard({ moduleId, children }: ModuleGuardProps) {
     const checkModule = () => {
       const saved = localStorage.getItem('global_disabled_modules');
       if (saved) {
-        const disabledIds = JSON.parse(saved);
-        if (disabledIds.includes(moduleId)) {
-          setIsAllowed(false);
-          toast.error(`The ${moduleId.toUpperCase()} module has been disabled by the system administrator.`, {
-            id: 'module-disabled-alert',
-            duration: 5000,
-          });
-        } else {
+        try {
+          const disabledIds = JSON.parse(saved);
+          if (Array.isArray(disabledIds) && disabledIds.includes(moduleId)) {
+            setIsAllowed(false);
+            toast.error(`The ${moduleId.toUpperCase()} module has been disabled by the system administrator.`, {
+              id: 'module-disabled-alert',
+              duration: 5000,
+            });
+          } else {
+            setIsAllowed(true);
+          }
+        } catch (e) {
+          console.error('Failed to parse disabled modules:', e);
           setIsAllowed(true);
         }
       } else {
@@ -79,3 +84,5 @@ export default function ModuleGuard({ moduleId, children }: ModuleGuardProps) {
 
   return <>{children}</>;
 }
+
+export default ModuleGuard;

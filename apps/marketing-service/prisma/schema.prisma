@@ -59,7 +59,7 @@ model Campaign {
   tenantId       String    @map("tenant_id")
   name           String
   description    String?
-  type           String    // EMAIL, SOCIAL, SMS, CALL
+  type           String    // EMAIL, SOCIAL, SMS, CALL, WHATSAPP
   status         String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
   scheduledAt    DateTime? @map("scheduled_at")
   templateId     String?   @map("template_id")

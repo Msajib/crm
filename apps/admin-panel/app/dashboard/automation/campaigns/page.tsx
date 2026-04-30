@@ -15,10 +15,21 @@ import {
   AlertCircle,
   X,
   Pause,
-  BarChart3
+  BarChart3,
+  Phone,
+  MessageSquare,
+  Smartphone,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
+
+const CAMPAIGN_TYPES = [
+  { id: 'EMAIL', label: 'Email', icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+  { id: 'SMS', label: 'SMS', icon: MessageSquare, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  { id: 'CALL', label: 'Auto Call', icon: Phone, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+  { id: 'WHATSAPP', label: 'WhatsApp', icon: Smartphone, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+];
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -26,6 +37,7 @@ export default function CampaignsPage() {
   const [leads, setLeads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState('EMAIL');
 
   useEffect(() => {
     fetchData();
@@ -67,7 +79,7 @@ export default function CampaignsPage() {
     const data = {
       name: formData.get('name'),
       description: formData.get('description'),
-      type: 'EMAIL',
+      type: selectedType,
       templateId: formData.get('templateId'),
       leadIds: selectedLeadIds,
       scheduledAt: formData.get('scheduledAt') || new Date().toISOString(),
@@ -80,7 +92,7 @@ export default function CampaignsPage() {
 
     try {
       await api.post('/marketing/campaigns', data);
-      toast.success('Campaign scheduled');
+      toast.success(`${selectedType} campaign scheduled`);
       setIsEditorOpen(false);
       fetchCampaigns();
     } catch (err) {
@@ -104,107 +116,114 @@ export default function CampaignsPage() {
       <div className="animate-fade-in flex flex-col h-[calc(100vh-160px)]">
         <header className="flex justify-between items-center mb-8">
            <div>
-              <h1 className="text-3xl font-black text-foreground mb-1 tracking-tight">Marketing Campaigns</h1>
-              <p className="text-muted-foreground text-sm font-medium italic">Schedule and monitor automated lead engagement sequences.</p>
+              <h1 className="text-3xl font-black text-foreground mb-1 tracking-tight">Automation Engine</h1>
+              <p className="text-muted-foreground text-sm font-medium italic">Omnichannel lead engagement: Email, SMS, Calls, and WhatsApp.</p>
            </div>
            <button 
              onClick={() => setIsEditorOpen(true)}
-             className="bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-bold flex items-center space-x-2 hover:opacity-90 transition-all shadow-lg shadow-primary/25"
+             className="bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-black flex items-center space-x-3 hover:opacity-90 transition-all shadow-xl shadow-primary/25 active:scale-95"
            >
               <Zap className="w-5 h-5 fill-current" />
               <span>New Campaign</span>
            </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto space-y-6 pr-4 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto space-y-6 pr-4 scrollbar-hide pb-20">
            {isLoading ? (
              <div className="py-32 text-center">
-                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Syncing campaign engine...</p>
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-muted-foreground font-bold">Syncing automation clusters...</p>
              </div>
            ) : campaigns.length === 0 ? (
-             <div className="py-32 text-center glass-premium rounded-[60px] border border-dashed border-border">
-                <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6">
-                   <Zap className="w-10 h-10 text-muted-foreground/30" />
+             <div className="py-32 text-center glass-premium rounded-[60px] border border-dashed border-border group">
+                <div className="w-24 h-24 bg-muted rounded-[40px] flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform">
+                   <Zap className="w-12 h-12 text-muted-foreground/30" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">No Active Campaigns</h3>
-                <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8">Engage your leads automatically with personalized email sequences.</p>
+                <h3 className="text-2xl font-black text-foreground mb-3">No Active Campaigns</h3>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-10 font-medium leading-relaxed">Engage your database automatically. Start with an email sequence or an automated call campaign.</p>
                 <button 
                   onClick={() => setIsEditorOpen(true)}
-                  className="bg-primary/10 text-primary px-8 py-3 rounded-2xl font-bold hover:bg-primary/20 transition-all"
+                  className="bg-primary/10 text-primary px-10 py-4 rounded-2xl font-black hover:bg-primary hover:text-white transition-all shadow-lg"
                 >
                    Launch First Campaign
                 </button>
              </div>
            ) : campaigns.map((camp) => (
-             <div key={camp.id} className="glass-premium p-8 rounded-[40px] border border-border group hover:border-primary/30 transition-all premium-shadow">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                   <div className="flex items-center space-x-6">
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 ${
+             <div key={camp.id} className="glass-premium p-10 rounded-[50px] border border-border group hover:border-primary/30 transition-all premium-shadow relative overflow-hidden bg-background/50">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10">
+                   <div className="flex items-center space-x-8">
+                      <div className={`w-20 h-20 rounded-[32px] flex items-center justify-center shrink-0 shadow-inner ${
                         camp.status === 'RUNNING' ? 'bg-amber-500/20 text-amber-500 animate-pulse' :
                         camp.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-500' :
                         camp.status === 'FAILED' ? 'bg-destructive/20 text-destructive' :
                         'bg-primary/20 text-primary'
                       }`}>
-                         {camp.status === 'RUNNING' ? <Play className="w-8 h-8 fill-current" /> : 
-                          camp.status === 'COMPLETED' ? <CheckCircle2 className="w-8 h-8" /> :
-                          camp.status === 'FAILED' ? <AlertCircle className="w-8 h-8" /> :
-                          <Clock className="w-8 h-8" />}
+                         {camp.type === 'EMAIL' ? <FileText className="w-10 h-10" /> :
+                          camp.type === 'CALL' ? <Phone className="w-10 h-10" /> :
+                          camp.type === 'SMS' ? <MessageSquare className="w-10 h-10" /> :
+                          <Smartphone className="w-10 h-10" />}
                       </div>
                       <div>
-                         <div className="flex items-center space-x-3">
-                            <h3 className="text-xl font-black text-foreground tracking-tight">{camp.name}</h3>
-                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
-                              camp.status === 'RUNNING' ? 'bg-amber-500/10 text-amber-500' :
-                              camp.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-500' :
-                              camp.status === 'FAILED' ? 'bg-destructive/10 text-destructive' :
-                              'bg-primary/10 text-primary'
+                         <div className="flex items-center space-x-4">
+                            <h3 className="text-2xl font-black text-foreground tracking-tight">{camp.name}</h3>
+                            <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border ${
+                              camp.status === 'RUNNING' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                              camp.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                              camp.status === 'FAILED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                              'bg-primary/10 text-primary border-primary/20'
                             }`}>
                                {camp.status}
                             </span>
                          </div>
-                         <p className="text-sm text-muted-foreground font-medium mt-1 italic">{camp.description || 'No description provided.'}</p>
+                         <div className="flex items-center gap-4 mt-2">
+                            <p className="text-sm text-muted-foreground font-medium italic">{camp.description || 'Automated engagement sequence'}</p>
+                            <span className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
+                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">{camp.type} CHANNEL</span>
+                         </div>
                       </div>
                    </div>
 
-                   <div className="flex flex-1 lg:max-w-md items-center space-x-8 px-8 border-x border-border/50">
+                   <div className="flex flex-1 lg:max-w-md items-center space-x-10 px-10 border-x border-border/50">
                       <div className="text-center flex-1">
-                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Reach</p>
-                         <p className="text-xl font-black text-foreground">{camp.leadIds?.length || 0}</p>
+                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Reach</p>
+                         <p className="text-2xl font-black text-foreground">{camp.leadIds?.length || 0}</p>
                       </div>
                       <div className="text-center flex-1">
-                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Sent</p>
-                         <p className="text-xl font-black text-emerald-500">{camp.processedCount}</p>
+                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Sent</p>
+                         <p className="text-2xl font-black text-emerald-500">{camp.processedCount}</p>
                       </div>
                       <div className="text-center flex-1">
-                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Failed</p>
-                         <p className="text-xl font-black text-destructive">{camp.failedCount}</p>
+                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Failed</p>
+                         <p className="text-2xl font-black text-destructive">{camp.failedCount}</p>
                       </div>
                    </div>
 
-                   <div className="flex items-center space-x-4">
-                      <div className="text-right min-w-[120px]">
-                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Scheduled For</p>
-                         <p className="text-xs font-bold text-foreground">{new Date(camp.scheduledAt).toLocaleString()}</p>
+                   <div className="flex items-center space-x-6">
+                      <div className="text-right min-w-[140px]">
+                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Execution Date</p>
+                         <p className="text-xs font-bold text-foreground">{new Date(camp.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
                       </div>
-                      <button onClick={() => handleDelete(camp.id)} className="p-4 hover:bg-destructive/10 rounded-2xl transition-all text-destructive">
-                         <Trash2 className="w-5 h-5" />
+                      <button onClick={() => handleDelete(camp.id)} className="p-5 hover:bg-destructive/10 rounded-3xl transition-all text-destructive group-hover:scale-110">
+                         <Trash2 className="w-6 h-6" />
                       </button>
                    </div>
                 </div>
 
                 {camp.status === 'RUNNING' && (
-                  <div className="mt-8">
-                     <div className="flex justify-between items-end mb-2">
-                        <p className="text-xs font-black text-foreground uppercase tracking-widest flex items-center">
-                           <BarChart3 className="w-3 h-3 mr-2 text-primary" />
-                           Progress: {Math.round((camp.processedCount / (camp.leadIds?.length || 1)) * 100)}%
+                  <div className="mt-10">
+                     <div className="flex justify-between items-end mb-3">
+                        <p className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+                           <BarChart3 className="w-4 h-4 text-primary" />
+                           Real-time Throughput: {Math.round((camp.processedCount / (camp.leadIds?.length || 1)) * 100)}%
                         </p>
-                        <p className="text-[10px] font-bold text-muted-foreground italic">Approx. {Math.max(0, (camp.leadIds?.length - camp.processedCount) * 0.5)} mins remaining</p>
+                        <p className="text-[10px] font-bold text-muted-foreground italic flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Est. {Math.max(0, (camp.leadIds?.length - camp.processedCount) * 0.5)} mins left
+                        </p>
                      </div>
-                     <div className="h-3 bg-muted rounded-full overflow-hidden border border-border">
+                     <div className="h-4 bg-muted rounded-full overflow-hidden border border-border shadow-inner p-1">
                         <div 
-                          className="h-full bg-gradient-to-r from-primary to-purple-500 transition-all duration-500 shadow-lg shadow-primary/30"
+                          className="h-full bg-gradient-to-r from-primary via-indigo-500 to-purple-500 transition-all duration-1000 rounded-full shadow-lg"
                           style={{ width: `${(camp.processedCount / (camp.leadIds?.length || 1)) * 100}%` }}
                         ></div>
                      </div>
@@ -215,81 +234,96 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-      {/* Campaign Editor */}
+      {/* Campaign Editor Modal */}
       {isEditorOpen && (
         <div className="fixed inset-0 bg-background/95 backdrop-blur-xl z-[200] flex items-center justify-center p-4">
-           <div className="glass-premium w-full max-w-4xl rounded-[50px] border border-border p-12 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-              <div className="flex justify-between items-center mb-10">
+           <div className="glass-premium w-full max-w-5xl rounded-[60px] border border-border p-16 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
+              <div className="flex justify-between items-start mb-12">
                  <div>
-                    <h2 className="text-3xl font-black text-foreground tracking-tight">New Marketing Campaign</h2>
-                    <p className="text-sm text-muted-foreground mt-2 font-medium">Define your audience and engagement schedule.</p>
+                    <h2 className="text-4xl font-black text-foreground tracking-tight">Initialize Campaign</h2>
+                    <p className="text-sm text-muted-foreground mt-2 font-medium">Select your channel and target audience for automated engagement.</p>
                  </div>
-                 <button onClick={() => setIsEditorOpen(false)} className="p-4 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>
+                 <button onClick={() => setIsEditorOpen(false)} className="p-5 hover:bg-muted rounded-3xl transition-all text-muted-foreground"><X className="w-7 h-7" /></button>
               </div>
               
-              <form onSubmit={handleSave} className="space-y-6 flex-1 overflow-y-auto pr-4 scrollbar-hide">
-                 <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2 col-span-2 lg:col-span-1">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Campaign Name</label>
-                       <input name="name" required className="w-full bg-muted/30 border border-border rounded-2xl px-6 py-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" placeholder="e.g. Q4 Lead Reactivation" />
+              <form onSubmit={handleSave} className="space-y-10 flex-1 overflow-y-auto pr-6 scrollbar-hide">
+                 <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-3 col-span-2 lg:col-span-1">
+                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Campaign Identity</label>
+                       <input name="name" required className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" placeholder="e.g. Winter Sales Blast" />
                     </div>
-                    <div className="space-y-2 col-span-2 lg:col-span-1">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Schedule Start</label>
-                       <input name="scheduledAt" type="datetime-local" className="w-full bg-muted/30 border border-border rounded-2xl px-6 py-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
-                    </div>
-                 </div>
-
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Description</label>
-                    <input name="description" className="w-full bg-muted/30 border border-border rounded-2xl px-6 py-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" placeholder="Optional brief about the goal..." />
-                 </div>
-
-                 <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Select Template</label>
-                       <select name="templateId" required className="w-full bg-muted/30 border border-border rounded-2xl px-6 py-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all appearance-none">
-                          <option value="">Choose a template...</option>
-                          {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                       </select>
-                    </div>
-                    <div className="space-y-2">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Action Type</label>
-                       <div className="flex space-x-2">
-                          <div className="flex-1 bg-primary text-primary-foreground p-4 rounded-2xl flex items-center justify-center space-x-2 font-black text-xs uppercase tracking-widest border border-primary/20">
-                             <FileText className="w-4 h-4" />
-                             <span>Email</span>
-                          </div>
-                          <div className="flex-1 bg-muted/30 text-muted-foreground p-4 rounded-2xl flex items-center justify-center space-x-2 font-black text-xs uppercase tracking-widest border border-border opacity-50 cursor-not-allowed">
-                             <Users className="w-4 h-4" />
-                             <span>SMS (TBA)</span>
-                          </div>
-                       </div>
+                    <div className="space-y-3 col-span-2 lg:col-span-1">
+                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Launch Schedule</label>
+                       <input name="scheduledAt" type="datetime-local" className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" />
                     </div>
                  </div>
 
                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2 flex justify-between items-center">
-                       <span>Target Leads</span>
-                       <span className="text-primary normal-case font-bold">{leads.length} Available</span>
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-2 bg-muted/20 rounded-3xl border border-border scrollbar-hide">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Engagement Channel</label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                       {CAMPAIGN_TYPES.map(type => {
+                         const Icon = type.icon;
+                         const active = selectedType === type.id;
+                         return (
+                           <div 
+                             key={type.id}
+                             onClick={() => setSelectedType(type.id)}
+                             className={`p-8 rounded-[32px] border-2 transition-all cursor-pointer flex flex-col items-center gap-4 group relative overflow-hidden ${
+                               active ? 'border-primary bg-primary/5 shadow-2xl' : 'border-border bg-background hover:border-primary/30'
+                             }`}
+                           >
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${active ? type.bg + ' ' + type.color : 'bg-muted text-muted-foreground'} group-hover:scale-110 transition-transform`}>
+                                 <Icon className="w-7 h-7" />
+                              </div>
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{type.label}</span>
+                              {active && <div className="absolute top-4 right-4 w-2 h-2 bg-primary rounded-full animate-ping" />}
+                           </div>
+                         );
+                       })}
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Creative Template</label>
+                       <div className="relative">
+                          <select name="templateId" required className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner appearance-none">
+                             <option value="">Select an asset...</option>
+                             {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          </select>
+                          <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none rotate-90" />
+                       </div>
+                    </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Brief Description</label>
+                       <input name="description" className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" placeholder="Campaign objective (internal use)..." />
+                    </div>
+                 </div>
+
+                 <div className="space-y-6">
+                    <div className="flex justify-between items-center ml-2">
+                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Target Audience</label>
+                       <span className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20">{leads.length} Active Records</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[350px] overflow-y-auto p-6 bg-muted/20 rounded-[40px] border border-border scrollbar-hide shadow-inner">
                        {leads.map(lead => (
-                         <label key={lead.id} className="flex items-center p-4 bg-card border border-border rounded-2xl cursor-pointer hover:border-primary/50 transition-all group">
-                            <input type="checkbox" name="leadIds" value={lead.id} className="w-5 h-5 rounded-lg border-2 border-border text-primary focus:ring-primary transition-all mr-4" />
-                            <div>
-                               <p className="text-xs font-black text-foreground">{lead.firstName} {lead.lastName}</p>
-                               <p className="text-[10px] text-muted-foreground font-medium">{lead.email}</p>
+                         <label key={lead.id} className="flex items-center p-6 bg-background border border-border rounded-[32px] cursor-pointer hover:border-primary/50 transition-all group relative overflow-hidden">
+                            <input type="checkbox" name="leadIds" value={lead.id} className="w-6 h-6 rounded-xl border-2 border-border text-primary focus:ring-primary transition-all mr-6 checked:bg-primary" />
+                            <div className="flex-1">
+                               <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{lead.firstName} {lead.lastName}</p>
+                               <p className="text-[10px] text-muted-foreground font-medium mt-1">{lead.email || 'No contact mail'}</p>
                             </div>
+                            <div className="absolute inset-y-0 right-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                          </label>
                        ))}
                     </div>
                  </div>
 
-                 <div className="flex space-x-4 pt-6">
-                    <button type="button" onClick={() => setIsEditorOpen(false)} className="flex-1 py-5 bg-muted text-foreground rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-muted/80 transition-all">Cancel</button>
-                    <button type="submit" className="flex-[2] py-5 bg-primary text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/30 hover:opacity-90 transition-all flex items-center justify-center space-x-2">
-                       <Zap className="w-4 h-4 fill-current" />
-                       <span>Initialize Campaign</span>
+                 <div className="flex space-x-6 pt-10 sticky bottom-0 bg-background/80 backdrop-blur-md pb-4 border-t border-border mt-10">
+                    <button type="button" onClick={() => setIsEditorOpen(false)} className="flex-1 py-6 bg-muted text-foreground rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-muted/80 transition-all border border-border">Discard</button>
+                    <button type="submit" className="flex-[2] py-6 bg-primary text-primary-foreground rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-3">
+                       <Zap className="w-5 h-5 fill-current" />
+                       <span>Confirm & Initiate Engine</span>
                     </button>
                  </div>
               </form>

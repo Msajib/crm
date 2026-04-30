@@ -34,7 +34,7 @@ export default function ActionDropdown({ onEdit, onDelete, onView, onCopy }: Act
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-52 glass-premium rounded-2xl border border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute right-0 mt-1.5 w-52 glass-premium rounded-2xl border border-border shadow-2xl z-[300] animate-in fade-in zoom-in-95 duration-200">
           <div className="p-2 space-y-1">
             {onView && (
               <button 

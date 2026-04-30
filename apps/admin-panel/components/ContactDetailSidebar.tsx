@@ -6,10 +6,16 @@ import { toast } from 'react-hot-toast';
 
 interface ContactDetailSidebarProps {
   contact: any;
+  staffList?: any[];
   onClose: () => void;
 }
 
-export default function ContactDetailSidebar({ contact, onClose }: ContactDetailSidebarProps) {
+export default function ContactDetailSidebar({ contact, staffList = [], onClose }: ContactDetailSidebarProps) {
+  const getStaffName = (id: string) => {
+    const staff = staffList.find(s => s.id === id);
+    return staff ? `${staff.firstName} ${staff.lastName}` : (id === 'ADMIN' ? 'System Admin' : 'Unassigned');
+  };
+
   const handleSendEmail = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -44,22 +50,50 @@ export default function ContactDetailSidebar({ contact, onClose }: ContactDetail
     }
   };
 
+  // ... (keep existing return but update the details section)
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-background border-l border-border shadow-2xl z-[60] animate-in slide-in-from-right duration-300 flex flex-col">
-       <header className="p-8 border-b border-border flex justify-between items-center bg-muted/30">
-          <div className="flex items-center space-x-4">
-             <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-xl">
-                {contact?.firstName?.[0] || '?'}{contact?.lastName?.[0] || ''}
+    <div className="fixed inset-0 z-[450] flex justify-end">
+       {/* Backdrop to close */}
+       <div 
+         className="absolute inset-0 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300"
+         onClick={onClose}
+       ></div>
+
+       {/* Sidebar Modal */}
+       <div className="relative w-full max-w-xl bg-card border-l border-border shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col h-full">
+          <header className="p-8 border-b border-border/50 flex justify-between items-center bg-muted/20">
+             <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-2xl shadow-lg shadow-primary/20">
+                   {contact?.firstName?.[0] || '?'}{contact?.lastName?.[0] || ''}
+                </div>
+                <div>
+                   <h2 className="text-2xl font-black text-foreground leading-tight">{contact?.firstName || 'Unknown'} {contact?.lastName || 'Contact'}</h2>
+                   <div className="flex items-center space-x-2 mt-1">
+                     <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Lead Score:</span>
+                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${contact?.score > 80 ? 'bg-emerald-500/10 text-emerald-500' : contact?.score > 50 ? 'bg-amber-500/10 text-amber-500' : 'bg-muted text-muted-foreground'}`}>
+                        {contact?.score || 0}%
+                     </span>
+                   </div>
+                </div>
              </div>
-             <div>
-                <h2 className="text-xl font-black text-foreground">{contact?.firstName || 'Unknown'} {contact?.lastName || 'Contact'}</h2>
-                <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Lead Score: {contact?.score || 0}%</p>
-             </div>
-          </div>
-          <button onClick={onClose} className="p-3 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>
-       </header>
+             <button onClick={onClose} className="p-2.5 bg-muted/50 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+             </button>
+          </header>
 
        <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+          {/* Ownership Info */}
+          <section className="grid grid-cols-2 gap-4">
+             <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
+                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Created By</p>
+                <p className="text-xs font-bold text-foreground">{getStaffName(contact?.createdBy)}</p>
+             </div>
+             <div className="p-5 rounded-2xl bg-muted/30 border border-border">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Assigned To</p>
+                <p className="text-xs font-bold text-foreground">{getStaffName(contact?.assignedTo)}</p>
+             </div>
+          </section>
+
           {/* Communication Timeline */}
           <section>
              <div className="flex justify-between items-center mb-6">
@@ -158,10 +192,11 @@ export default function ContactDetailSidebar({ contact, onClose }: ContactDetail
              <Mail className="w-4 h-4 mr-2" />
              SEND EMAIL
           </button>
-          <button className="w-14 h-14 rounded-2xl border border-border flex items-center justify-center hover:bg-muted transition-all">
+           <button className="w-14 h-14 rounded-2xl border border-border flex items-center justify-center hover:bg-muted transition-all">
              <MoreVertical className="w-5 h-5 text-muted-foreground" />
           </button>
        </footer>
+     </div>
     </div>
   );
 }

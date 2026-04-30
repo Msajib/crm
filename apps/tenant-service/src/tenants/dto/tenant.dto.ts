@@ -129,3 +129,15 @@ export class ConnectSocialAccountDto {
   @IsString()
   refreshToken?: string;
 }
+
+export class UpdateExpiryTemplatesDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  expiryWarningTemplate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  expiryFinalTemplate?: string;
+}

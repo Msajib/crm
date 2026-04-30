@@ -1,0 +1,24 @@
+[2026-04-29T17:58:34.163Z] GET /marketing/campaigns
+TypeError: Cannot read properties of undefined (reading 'getCampaigns')
+    at MarketingController.listCampaigns (C:\Users\Elitebook\Desktop\Projects\CRM\apps\marketing-service\dist\marketing\marketing.controller.js:23:38)
+    at C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:38:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-04-29T17:58:55.624Z] GET /marketing/campaigns
+TypeError: Cannot read properties of undefined (reading 'getCampaigns')
+    at MarketingController.listCampaigns (C:\Users\Elitebook\Desktop\Projects\CRM\apps\marketing-service\dist\marketing\marketing.controller.js:23:38)
+    at C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:38:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-04-29T17:59:25.639Z] GET /marketing/campaigns
+TypeError: Cannot read properties of undefined (reading 'getCampaigns')
+    at MarketingController.listCampaigns (C:\Users\Elitebook\Desktop\Projects\CRM\apps\marketing-service\dist\marketing\marketing.controller.js:23:38)
+    at C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:38:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-proxy.js:9:17
+

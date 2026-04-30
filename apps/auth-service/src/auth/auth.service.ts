@@ -4,10 +4,13 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import {
   RegisterDto,
   LoginDto,
@@ -23,6 +26,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private httpService: HttpService
   ) {}
 
   // ─── Register ────────────────────────────────────────────────
@@ -81,6 +85,29 @@ export class AuthService {
 
     if (!user.isActive) {
       throw new UnauthorizedException('Account is deactivated');
+    }
+
+    // Check Tenant Expiry (Skip for Super Admin)
+    if (user.role !== 'SUPER_ADMIN') {
+      try {
+        const tenantServiceUrl = this.configService.get('TENANT_SERVICE_URL') || 'http://127.0.0.1:3002';
+        const response = await firstValueFrom(
+          this.httpService.get(`${tenantServiceUrl}/tenants/${user.tenantId}`)
+        );
+        const tenant = response.data;
+        
+        if (tenant && tenant.expiresAt && new Date(tenant.expiresAt) < new Date()) {
+          throw new ForbiddenException({
+            message: 'Your subscription has expired. Please contact support or renew your plan.',
+            type: 'SUBSCRIPTION_EXPIRED',
+            link: '/dashboard/settings/subscription'
+          });
+        }
+      } catch (e) {
+        if (e instanceof ForbiddenException) throw e;
+        // If tenant service is down, we might allow login but log it
+        console.error('Failed to check tenant expiry:', e.message);
+      }
     }
 
     // Update last login
@@ -142,6 +169,7 @@ export class AuthService {
       });
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
+        include: { customRole: true },
       });
       if (!user || !user.isActive) return null;
       return payload;
@@ -175,19 +203,44 @@ export class AuthService {
 
   // ─── Get Current User ────────────────────────────────────────
   async getMe(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { customRole: true },
+    });
     if (!user) throw new NotFoundException('User not found');
-    return this.sanitizeUser(user);
+    // Return effective permissions (from role if assigned)
+    const effectivePermissions =
+      user.role === 'STAFF' && user.customRole
+        ? user.customRole.permissions
+        : user.permissions;
+    return this.sanitizeUser({ ...user, permissions: effectivePermissions });
   }
 
   // ─── Private Helpers ─────────────────────────────────────────
   private async generateTokens(user: any) {
+    // Resolve effective permissions: STAFF get role's live permissions, not cached user.permissions
+    let effectivePermissions = user.permissions || [];
+    if (user.role === 'STAFF' && user.customRoleId) {
+      const customRole = await this.prisma.customRole.findUnique({
+        where: { id: user.customRoleId },
+      });
+      if (customRole) {
+        effectivePermissions = customRole.permissions;
+        // Sync the stored permissions so next lookup is consistent
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { permissions: effectivePermissions },
+        });
+      }
+    }
+
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role,
       tenantId: user.tenantId,
-      permissions: user.permissions,
+      customRoleId: user.customRoleId || null,
+      permissions: effectivePermissions,
     };
 
     const accessToken = this.jwtService.sign(payload, {

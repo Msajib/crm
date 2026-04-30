@@ -10,6 +10,7 @@ import { JwtAuthGuard, Public } from '../guards/jwt-auth.guard';
 const SERVICE_ROUTES: Record<string, string> = {
   auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
   users: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
+  roles: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
   tenants: process.env.TENANT_SERVICE_URL || 'http://localhost:3002',
   contacts: process.env.CRM_SERVICE_URL || 'http://localhost:3003',
   deals: process.env.CRM_SERVICE_URL || 'http://localhost:3003',
@@ -29,10 +30,12 @@ const SERVICE_ROUTES: Record<string, string> = {
   dashboard: process.env.CRM_SERVICE_URL || 'http://localhost:3003',
   notifications: process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004',
   'email-config': process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004',
+  import: process.env.IMPORT_SERVICE_URL || 'http://localhost:3009',
+  webhooks: process.env.CRM_SERVICE_URL || 'http://localhost:3003',
 };
 
 @ApiTags('gateway')
-@Controller('api')
+@Controller(['api', 'api/v1'])
 export class GatewayController {
   constructor(private readonly proxyService: ProxyService) {}
 
@@ -52,9 +55,13 @@ export class GatewayController {
   @Public()
   @All('auth/*')
   async proxyAuth(@Req() req: Request) {
-    const path = req.url.replace('/api', '');
-    const headers: Record<string, string> = {};
+    // Robust path normalization: 
+    // 1. Get the original URL (includes query params)
+    // 2. Remove the base prefixes /api/v1 or /api
+    let path = req.originalUrl || req.url;
+    path = path.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
     
+    const headers: Record<string, string> = {};
     if (req.headers.authorization) {
       headers['authorization'] = req.headers.authorization;
     }
@@ -83,7 +90,11 @@ export class GatewayController {
       return { error: `Unknown service: ${service}` };
     }
 
-    let path = req.url.replace('/api', '');
+    // Robust path normalization: 
+    // 1. Get the original URL (includes query params)
+    // 2. Remove the base prefixes /api/v1 or /api
+    let path = req.originalUrl || req.url;
+    path = path.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
 
     // Map service name to its controller prefix in the downstream service
     const servicePrefixes: Record<string, string> = {
@@ -95,6 +106,7 @@ export class GatewayController {
       'communications': '/communications',
       'tenants': '/tenants',
       'ai': '/ai',
+      'webhooks': '',
       'dashboard': '',
       'crm': '',
       'leads': '',
@@ -103,12 +115,13 @@ export class GatewayController {
       'tasks': '',
       'billing': '',
       'payments': '',
+      'roles': '',
     };
 
     const prefix = servicePrefixes[service] || `/${service}`;
     
-    // Ensure we don't double the prefix if it's already in the path
-    if (!path.startsWith(prefix)) {
+    // Ensure the path starts with the required service prefix if specified
+    if (prefix && !path.startsWith(prefix)) {
       path = `${prefix}${path}`;
     }
 
@@ -122,6 +135,8 @@ export class GatewayController {
     if (req.headers.authorization) {
       authHeaders['authorization'] = req.headers.authorization;
     }
+
+    console.log(`[Proxy] ${req.method} ${service} -> ${serviceUrl}${path}`);
 
     return this.proxyService.forward(
       serviceUrl,

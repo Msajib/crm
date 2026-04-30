@@ -1,0 +1,37 @@
+// Import Service Prisma Schema
+// Database: crm_import_db
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/import-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("IMPORT_DATABASE_URL")
+}
+
+model ImportJob {
+  id          String       @id @default(uuid())
+  tenantId    String       @map("tenant_id")
+  userId      String       @map("user_id")
+  fileName    String       @map("file_name")
+  fileSize    Int?         @map("file_size")
+  totalRows   Int          @default(0) @map("total_rows")
+  processedRows Int        @default(0) @map("processed_rows")
+  successRows   Int        @default(0) @map("success_rows")
+  failedRows    Int        @default(0) @map("failed_rows")
+  status      JobStatus    @default(PENDING)
+  errorLog    Json?        @map("error_log") // Store reasons for failures [{row: 1, reason: 'Duplicate'}]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@map("import_jobs")
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}

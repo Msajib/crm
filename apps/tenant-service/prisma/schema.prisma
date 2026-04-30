@@ -27,6 +27,7 @@ model Tenant {
   timezone    String       @default("UTC")
   locale      String       @default("en")
   settings    Json         @default("{}")
+  expiresAt   DateTime?    @map("expires_at")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 
@@ -47,9 +48,27 @@ model SystemSetting {
   secondaryColor String @default("#4f46e5") @map("secondary_color")
   accentColor  String   @default("#f59e0b") @map("accent_color")
   metaDescription String? @map("meta_description")
+  
+  // Subscription Expiry Templates
+  expiryWarningTemplate String? @map("expiry_warning_template")
+  expiryFinalTemplate   String? @map("expiry_final_template")
+  
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("system_settings")
+}
+
+model SystemTemplate {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  subject   String?
+  content   String   @db.Text
+  type      String   @default("EMAIL") // EMAIL, SMS, etc.
+  category  String   @default("GENERAL") // SUBSCRIPTION, MARKETING, etc.
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_templates")
 }
 
 model Plan {

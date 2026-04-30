@@ -44,6 +44,13 @@ export class CrmController {
     return this.crmService.createContact(tenantId, userId, dto);
   }
 
+  @Post('contacts/internal/import')
+  @ApiOperation({ summary: 'Internal bulk import contact' })
+  async internalImportContact(@Body() body: any) {
+    const { tenantId, userId, ...dto } = body;
+    return this.crmService.createContact(tenantId, userId, dto);
+  }
+
   @Get('contacts')
   @ApiOperation({ summary: 'List all contacts with pagination & search' })
   @ApiQuery({ name: 'page', required: false })
@@ -133,6 +140,26 @@ export class CrmController {
   @ApiOperation({ summary: 'List all pipelines' })
   async getPipelines(@Headers('x-tenant-id') tenantId: string) {
     return this.crmService.getPipelines(tenantId);
+  }
+
+  @Put('pipelines/:id')
+  @ApiOperation({ summary: 'Update a pipeline' })
+  async updatePipeline(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: any,
+  ) {
+    return this.crmService.updatePipeline(id, tenantId, dto);
+  }
+
+  @Delete('pipelines/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a pipeline' })
+  async deletePipeline(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.crmService.deletePipeline(id, tenantId);
   }
 
   // ─── Deals ───────────────────────────────────────────────────
@@ -252,5 +279,41 @@ export class CrmController {
     @Param('id') id: string,
   ) {
     return this.crmService.deleteTask(id, tenantId);
+  }
+
+  // ─── Webhooks ───────────────────────────────────────────────
+  @Get('webhooks')
+  @ApiOperation({ summary: 'List all webhooks' })
+  async listWebhooks(@Headers('x-tenant-id') tenantId: string) {
+    return this.crmService.listWebhooks(tenantId);
+  }
+
+  @Post('webhooks')
+  @ApiOperation({ summary: 'Create a new webhook' })
+  async createWebhook(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() dto: any,
+  ) {
+    return this.crmService.createWebhook(tenantId, dto);
+  }
+
+  @Put('webhooks/:id')
+  @ApiOperation({ summary: 'Update a webhook' })
+  async updateWebhook(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: any,
+  ) {
+    return this.crmService.updateWebhook(id, tenantId, dto);
+  }
+
+  @Delete('webhooks/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a webhook' })
+  async deleteWebhook(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.crmService.deleteWebhook(id, tenantId);
   }
 }

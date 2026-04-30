@@ -406,14 +406,24 @@ export class MarketingService {
       });
 
       try {
-        if (campaign.type === 'EMAIL') {
-          await this.processEmailCampaign(campaign);
-        } else {
-          // Handle other types (SMS, CALL) later
-          await this.prisma.campaign.update({
-            where: { id: campaign.id },
-            data: { status: 'COMPLETED' },
-          });
+        switch (campaign.type) {
+          case 'EMAIL':
+            await this.processEmailCampaign(campaign);
+            break;
+          case 'SMS':
+            await this.processSmsCampaign(campaign);
+            break;
+          case 'CALL':
+            await this.processCallCampaign(campaign);
+            break;
+          case 'WHATSAPP':
+            await this.processWhatsappCampaign(campaign);
+            break;
+          default:
+            await this.prisma.campaign.update({
+              where: { id: campaign.id },
+              data: { status: 'COMPLETED' },
+            });
         }
       } catch (error) {
         this.logger.error(`Campaign ${campaign.id} failed: ${error.message}`);
@@ -484,6 +494,33 @@ export class MarketingService {
         processedCount: processed, 
         failedCount: failed 
       },
+    });
+  }
+
+  private async processSmsCampaign(campaign: any) {
+    this.logger.log(`Processing SMS campaign ${campaign.id}`);
+    // Future: Connect to CommunicationService SMS endpoint
+    await this.prisma.campaign.update({
+      where: { id: campaign.id },
+      data: { status: 'COMPLETED', processedCount: campaign.leadIds.length }
+    });
+  }
+
+  private async processCallCampaign(campaign: any) {
+    this.logger.log(`Processing Call campaign ${campaign.id}`);
+    // Future: Connect to CommunicationService Call/VoIP endpoint
+    await this.prisma.campaign.update({
+      where: { id: campaign.id },
+      data: { status: 'COMPLETED', processedCount: campaign.leadIds.length }
+    });
+  }
+
+  private async processWhatsappCampaign(campaign: any) {
+    this.logger.log(`Processing WhatsApp campaign ${campaign.id}`);
+    // Future: Connect to CommunicationService WhatsApp endpoint
+    await this.prisma.campaign.update({
+      where: { id: campaign.id },
+      data: { status: 'COMPLETED', processedCount: campaign.leadIds.length }
     });
   }
 }

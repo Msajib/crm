@@ -14,15 +14,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const mustChangePassword = localStorage.getItem('mustChangePassword');
-    if (mustChangePassword === 'true' && pathname !== '/dashboard/settings/profile') {
-      router.push('/dashboard/settings/profile');
+    const isBrandingTab = pathname === '/dashboard/settings' && window.location.search.includes('tab=branding');
+    if (mustChangePassword === 'true' && !isBrandingTab) {
+      router.push('/dashboard/settings?tab=branding');
     }
   }, [pathname, router]);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Sidebar - Desktop Only */}
-      <aside className="hidden lg:flex h-screen sticky top-0 shrink-0">
+      <aside className="hidden md:flex h-screen sticky top-0 shrink-0">
         <Sidebar />
       </aside>
 

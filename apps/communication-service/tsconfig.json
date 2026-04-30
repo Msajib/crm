@@ -15,6 +15,9 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallbackArgs": false
+    "noFallbackArgs": false,
+    "paths": {
+      "@prisma/communication-client": ["../../node_modules/@prisma/communication-client"]
+    }
   }
 }

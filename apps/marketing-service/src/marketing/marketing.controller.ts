@@ -11,35 +11,40 @@ export class MarketingController {
   // ─── Campaigns ──────────────────────────────────────────────
   @Get('campaigns')
   @ApiOperation({ summary: 'List all campaigns' })
-  async listCampaigns(@Headers('x-tenant-id') tenantId: string) {
+  async listCampaigns(@Headers() headers: any) {
+    const tenantId = headers['x-tenant-id'];
     return this.marketingService.getCampaigns(tenantId);
   }
 
   @Post('campaigns')
   @ApiOperation({ summary: 'Create a new campaign' })
-  async createCampaign(@Headers('x-tenant-id') tenantId: string, @Body() dto: any) {
+  async createCampaign(@Headers() headers: any, @Body() dto: any) {
+    const tenantId = headers['x-tenant-id'];
     return this.marketingService.createCampaign(tenantId, dto);
   }
 
   @Get('campaigns/:id')
   @ApiOperation({ summary: 'Get campaign details' })
-  async getCampaign(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
+  async getCampaign(@Headers() headers: any, @Param('id') id: string) {
+    const tenantId = headers['x-tenant-id'];
     return this.marketingService.getCampaign(id, tenantId);
   }
 
   @Put('campaigns/:id')
   @ApiOperation({ summary: 'Update campaign' })
   async updateCampaign(
-    @Headers('x-tenant-id') tenantId: string,
+    @Headers() headers: any,
     @Param('id') id: string,
     @Body() dto: any
   ) {
+    const tenantId = headers['x-tenant-id'];
     return this.marketingService.updateCampaign(id, tenantId, dto);
   }
 
   @Delete('campaigns/:id')
   @ApiOperation({ summary: 'Delete campaign' })
-  async deleteCampaign(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
+  async deleteCampaign(@Headers() headers: any, @Param('id') id: string) {
+    const tenantId = headers['x-tenant-id'];
     return this.marketingService.deleteCampaign(id, tenantId);
   }
 

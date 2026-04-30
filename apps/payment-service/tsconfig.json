@@ -6,6 +6,11 @@
                             "incremental":  true,
                             "baseUrl":  "./",
                             "module":  "commonjs",
-                            "declaration":  true
+                            "moduleResolution": "node",
+                            "emitDecoratorMetadata": true,
+                            "declaration":  true,
+                            "paths": {
+                                "@prisma/payment-client": ["../../node_modules/@prisma/payment-client"]
+                            }
                         }
 }

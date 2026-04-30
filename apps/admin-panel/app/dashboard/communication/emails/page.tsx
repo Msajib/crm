@@ -42,7 +42,7 @@ export default function CommunicationEmails() {
   const fetchEmails = async () => {
     try {
       const data = await api.get('/communications/logs');
-      setEmails(data || []);
+      setEmails(Array.isArray(data) ? data : data?.data || []);
     } catch (err) {
       // Don't toast if it's just empty or 404
       console.log('Failed to fetch email logs');

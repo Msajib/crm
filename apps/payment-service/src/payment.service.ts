@@ -153,6 +153,13 @@ export class PaymentService {
     });
   }
 
+  async getTenantInvoices(tenantId: string) {
+    return this.prisma.invoice.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   private async notifySuperAdmin(data: any) {
     try {
       const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';

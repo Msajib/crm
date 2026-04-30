@@ -16,6 +16,7 @@ model Contact {
   id           String        @id @default(uuid())
   tenantId     String        @map("tenant_id")
   assignedTo   String?       @map("assigned_to")  // Staff user ID
+  createdBy    String?       @map("created_by")   // Original creator ID
   firstName    String        @map("first_name")
   lastName     String        @map("last_name")
   jobTitle     String?       @map("job_title")
@@ -76,6 +77,7 @@ model Pipeline {
   @@map("pipelines")
 }
 
+// ─── Pipeline Stages ──────────────────────────────────────────
 model PipelineStage {
   id         String   @id @default(uuid())
   pipelineId String   @map("pipeline_id")
@@ -98,6 +100,7 @@ model Deal {
   pipelineId  String     @map("pipeline_id")
   stageId     String     @map("stage_id")
   assignedTo  String?    @map("assigned_to")
+  createdBy   String?    @map("created_by")
   title       String
   value       Float      @default(0)
   currency    String     @default("USD")
@@ -166,6 +169,23 @@ model Task {
   @@index([tenantId])
   @@index([assignedTo])
   @@map("tasks")
+}
+
+// ─── Webhooks ─────────────────────────────────────────────────
+model Webhook {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  url         String
+  events      String[] // ["contact.created", "deal.won", etc.]
+  isActive    Boolean  @default(true) @map("is_active")
+  secret      String?  // For payload signing
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@map("webhooks")
 }
 
 // ─── Enums ────────────────────────────────────────────────────

@@ -62,7 +62,7 @@ export class UsersController {
     @Query('limit') limit = 20,
     @Query('search') search?: string,
   ) {
-    return this.usersService.listStaff(req.user.tenantId, +page, +limit, search);
+    return this.usersService.listStaff(req.user.tenantId, req.user.userId, +page, +limit, search);
   }
 
   @Get('staff/:id')
@@ -91,11 +91,40 @@ export class UsersController {
     return this.usersService.updatePermissions(id, req.user.tenantId, body.permissions);
   }
 
+  @Post('staff/:id/reset-password')
+  @ApiOperation({ summary: 'Reset staff member password (Admin only)' })
+  async resetPassword(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { password: string },
+  ) {
+    return this.usersService.resetPassword(id, req.user.tenantId, body.password);
+  }
+
   @Delete('staff/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deactivate a staff member' })
   async deactivate(@Request() req: any, @Param('id') id: string) {
     return this.usersService.deactivate(id, req.user.tenantId);
+  }
+
+  @Delete('staff/:id/permanent')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Permanently delete a staff member' })
+  async remove(@Request() req: any, @Param('id') id: string) {
+    return this.usersService.remove(id, req.user.tenantId);
+  }
+
+  @Get('internal/staff-counts')
+  @ApiOperation({ summary: 'Get staff counts for all tenants (Super Admin/Internal)' })
+  async getStaffCounts() {
+    return this.usersService.getStaffCounts();
+  }
+
+  @Get('internal/all-admins')
+  @ApiOperation({ summary: 'Get all admin users across all tenants (Internal)' })
+  async getAllAdmins() {
+    return this.usersService.getAllAdmins();
   }
 
   @Post('internal/notify-super-admin')

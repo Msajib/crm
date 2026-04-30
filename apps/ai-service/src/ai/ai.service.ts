@@ -115,21 +115,26 @@ export class AIService {
   }
 
   async getConfigs(tenantId: string) {
-    return this.prisma.aIConfiguration.findMany({
-      where: { 
-        OR: [
-          { tenantId },
-          { tenantId: 'GLOBAL' }
-        ]
-      },
-      select: {
-        provider: true,
-        modelName: true,
-        isActive: true,
-        updatedAt: true,
-        tenantId: true
-      }
-    });
+    try {
+      return await this.prisma.aIConfiguration.findMany({
+        where: { 
+          OR: [
+            { tenantId },
+            { tenantId: 'GLOBAL' }
+          ]
+        },
+        select: {
+          provider: true,
+          modelName: true,
+          isActive: true,
+          updatedAt: true,
+          tenantId: true
+        }
+      });
+    } catch (err) {
+      this.logger.error(`Failed to fetch AI configs: ${err.message}`);
+      return []; // Return empty list to prevent frontend crash
+    }
   }
 
   async addKnowledge(tenantId: string, dto: { fileName: string; content: string; metadata?: any }) {

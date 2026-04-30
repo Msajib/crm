@@ -22,6 +22,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 import ModuleGuard from '@/components/ModuleGuard';
+import ImportModal from '@/components/ImportModal';
 
 export default function LeadsPage() {
   return (
@@ -43,6 +44,7 @@ function LeadsContent() {
     title: '',
     value: 0
   });
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     fetchLeads();
@@ -112,7 +114,10 @@ function LeadsContent() {
               <TrendingUp className="w-5 h-5 text-emerald-500" />
               <span className="text-sm font-black text-foreground">Conversion: 12.5%</span>
             </div>
-            <button className="bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-bold flex items-center space-x-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all">
+            <button 
+              onClick={() => setShowImportModal(true)}
+              className="bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-bold flex items-center space-x-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
+            >
               <Plus className="w-5 h-5" />
               <span>Import Leads</span>
             </button>
@@ -300,6 +305,16 @@ function LeadsContent() {
               </form>
            </div>
         </div>
+      )}
+      {/* Import Modal */}
+      {showImportModal && (
+        <ImportModal 
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            fetchLeads();
+            setShowImportModal(false);
+          }}
+        />
       )}
     </DashboardLayout>
   );

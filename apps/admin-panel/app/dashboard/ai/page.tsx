@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import ModuleGuard from '@/components/ModuleGuard';
+import { ModuleGuard } from '@/components/ModuleGuard';
 import { 
   Sparkles, 
   Send, 

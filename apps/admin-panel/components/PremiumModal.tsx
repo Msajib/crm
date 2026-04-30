@@ -36,7 +36,7 @@ export default function PremiumModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 md:p-6 lg:p-10">
           {/* Overlay */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -52,10 +52,10 @@ export default function PremiumModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`relative w-full ${maxWidth} bg-card rounded-[40px] border border-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
+            className={`relative w-full ${maxWidth} bg-card rounded-[40px] border border-border shadow-2xl overflow-hidden flex flex-col max-h-[95vh]`}
           >
             {/* Header */}
-            <div className="p-8 md:p-10 border-b border-border flex justify-between items-center bg-muted/30">
+            <div className="p-8 md:p-10 border-b border-border flex justify-between items-center bg-muted/30 shrink-0">
                <div>
                   <h2 className="text-2xl font-black text-foreground tracking-tight">{title}</h2>
                   {subtitle && <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{subtitle}</p>}
@@ -75,7 +75,7 @@ export default function PremiumModal({
 
             {/* Footer */}
             {footer && (
-              <div className="p-8 md:p-10 border-t border-border bg-muted/30">
+              <div className="p-8 md:p-10 border-t border-border bg-muted/30 shrink-0">
                 {footer}
               </div>
             )}

@@ -30,6 +30,7 @@ export class CrmService {
         notes: dto.notes,
         customFields: dto.customFields || {},
         assignedTo: dto.assignedTo || userId,
+        createdBy: userId,
       },
       include: { company: true },
     });
@@ -163,6 +164,64 @@ export class CrmService {
     });
   }
 
+  async updatePipeline(id: string, tenantId: string, dto: any) {
+    // Basic update for pipeline name/default
+    await this.prisma.pipeline.update({
+      where: { id, tenantId },
+      data: {
+        name: dto.name,
+        isDefault: dto.isDefault,
+      },
+    });
+
+    // If stages are provided, we do a simple sync (delete old, create new for simplicity in this version)
+    // In a production app, you'd want to handle ID matching to avoid breaking deal relations
+    if (dto.stages && dto.stages.length > 0) {
+      // Check if any deals are using stages we are about to delete
+      // For now, let's just update names/colors if they have IDs, or create new ones
+      for (const s of dto.stages) {
+        if (s.id) {
+          await this.prisma.pipelineStage.update({
+            where: { id: s.id },
+            data: {
+              name: s.name,
+              order: s.order,
+              color: s.color,
+              probability: s.probability,
+            }
+          });
+        } else {
+          await this.prisma.pipelineStage.create({
+            data: {
+              pipelineId: id,
+              name: s.name,
+              order: s.order,
+              color: s.color || '#6366f1',
+              probability: s.probability || 0,
+            }
+          });
+        }
+      }
+    }
+
+    return this.prisma.pipeline.findUnique({
+      where: { id },
+      include: { stages: { orderBy: { order: 'asc' } } }
+    });
+  }
+
+  async deletePipeline(id: string, tenantId: string) {
+    // Check if deals exist
+    const dealsCount = await this.prisma.deal.count({ where: { pipelineId: id } });
+    if (dealsCount > 0) {
+      throw new Error('Cannot delete pipeline with active deals. Move deals first.');
+    }
+
+    await this.prisma.pipelineStage.deleteMany({ where: { pipelineId: id } });
+    await this.prisma.pipeline.delete({ where: { id, tenantId } });
+    return { message: 'Pipeline deleted' };
+  }
+
   // ═══════════════ DEALS ══════════════════════════════════════
 
   async createDeal(tenantId: string, userId: string, dto: CreateDealDto) {
@@ -179,6 +238,7 @@ export class CrmService {
         description: dto.description,
         notes: dto.notes,
         assignedTo: dto.assignedTo || userId,
+        createdBy: userId,
       },
       include: { contact: true, stage: true, pipeline: true },
     });
@@ -254,11 +314,11 @@ export class CrmService {
             delete item.name;
           }
           result = await this.prisma.contact.create({
-            data: { ...item, tenantId, assignedTo: userId }
+            data: { ...item, tenantId, assignedTo: userId, createdBy: userId }
           });
         } else if (module === 'deals') {
           result = await this.prisma.deal.create({
-            data: { ...item, tenantId, assignedTo: userId }
+            data: { ...item, tenantId, assignedTo: userId, createdBy: userId }
           });
         } else if (module === 'tasks') {
           result = await this.prisma.task.create({
@@ -521,5 +581,51 @@ export class CrmService {
       ...deals.map(d => ({ id: d.id, name: d.title, type: 'Deal' })),
       ...tasks.map(t => ({ id: t.id, name: t.title, type: 'Task' })),
     ];
+  }
+
+  // ═══════════════ WEBHOOKS ═══════════════════════════════════
+
+  async listWebhooks(tenantId: string) {
+    return this.prisma.webhook.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createWebhook(tenantId: string, dto: any) {
+    return this.prisma.webhook.create({
+      data: {
+        tenantId,
+        name: dto.name,
+        url: dto.url,
+        events: dto.events || [],
+        isActive: dto.isActive ?? true,
+        secret: dto.secret,
+      },
+    });
+  }
+
+  async updateWebhook(id: string, tenantId: string, dto: any) {
+    const webhook = await this.prisma.webhook.findFirst({ where: { id, tenantId } });
+    if (!webhook) throw new NotFoundException('Webhook not found');
+
+    return this.prisma.webhook.update({
+      where: { id },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.url && { url: dto.url }),
+        ...(dto.events && { events: dto.events }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.secret !== undefined && { secret: dto.secret }),
+      },
+    });
+  }
+
+  async deleteWebhook(id: string, tenantId: string) {
+    const webhook = await this.prisma.webhook.findFirst({ where: { id, tenantId } });
+    if (!webhook) throw new NotFoundException('Webhook not found');
+
+    await this.prisma.webhook.delete({ where: { id } });
+    return { message: 'Webhook deleted' };
   }
 }

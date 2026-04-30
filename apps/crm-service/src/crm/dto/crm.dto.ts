@@ -146,3 +146,33 @@ export class UpdateTaskDto {
   @ApiPropertyOptional() @IsOptional() dueDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsArray() checklists?: any[];
 }
+export class CreateWebhookDto {
+  @ApiProperty({ example: 'Slack Notification' })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ example: 'https://hooks.slack.com/services/...' })
+  @IsString()
+  url: string;
+
+  @ApiProperty({ example: ['deal.won', 'contact.created'] })
+  @IsArray()
+  events: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  secret?: string;
+}
+
+export class UpdateWebhookDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() name?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() url?: string;
+  @ApiPropertyOptional() @IsOptional() @IsArray() events?: string[];
+  @ApiPropertyOptional() @IsOptional() isActive?: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsString() secret?: string;
+}

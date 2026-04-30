@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Put, Patch, Body,
+  Controller, Get, Post, Put, Patch, Delete, Body,
   Param, Query, Headers, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -7,7 +7,8 @@ import { TenantsService } from './tenants.service';
 import {
   CreateTenantDto, UpdateTenantDto,
   ConnectSocialAccountDto,
-  UpdateSystemSettingsDto
+  UpdateSystemSettingsDto,
+  UpdateExpiryTemplatesDto
 } from './dto/tenant.dto';
 
 // Note: Auth is enforced at gateway level
@@ -17,7 +18,14 @@ import {
 @ApiBearerAuth()
 @Controller('tenants')
 export class TenantsController {
-  constructor(private readonly tenantsService: TenantsService) {}
+  constructor(private readonly tenantsService: TenantsService) {
+    console.log('TenantsController initialized with custom template routes');
+  }
+
+  @Get('ping')
+  async ping() {
+    return { status: 'ok', time: new Date() };
+  }
 
   @Get('current')
   @ApiOperation({ summary: 'Get current tenant details' })
@@ -49,6 +57,36 @@ export class TenantsController {
   @ApiOperation({ summary: 'Update global system settings (Super Admin)' })
   async updateSystemSettings(@Body() dto: UpdateSystemSettingsDto) {
     return this.tenantsService.updateSystemSettings(dto);
+  }
+
+  @Put('system/expiry-templates')
+  @ApiOperation({ summary: 'Update expiry email templates (Super Admin)' })
+  async updateExpiryTemplates(@Body() dto: UpdateExpiryTemplatesDto) {
+    return this.tenantsService.updateExpiryTemplates(dto);
+  }
+
+  @Get('system/templates')
+  @ApiOperation({ summary: 'Get all system templates (Super Admin)' })
+  async findAllTemplates() {
+    return this.tenantsService.findAllTemplates();
+  }
+
+  @Post('system/templates')
+  @ApiOperation({ summary: 'Create a new system template (Super Admin)' })
+  async createTemplate(@Body() dto: any) {
+    return this.tenantsService.createTemplate(dto);
+  }
+
+  @Put('system/templates/:id')
+  @ApiOperation({ summary: 'Update a system template (Super Admin)' })
+  async updateTemplate(@Param('id') id: string, @Body() dto: any) {
+    return this.tenantsService.updateTemplate(id, dto);
+  }
+
+  @Delete('system/templates/:id')
+  @ApiOperation({ summary: 'Delete a system template (Super Admin)' })
+  async deleteTemplate(@Param('id') id: string) {
+    return this.tenantsService.deleteTemplate(id);
   }
 
   @Post()
@@ -96,6 +134,12 @@ export class TenantsController {
   @ApiOperation({ summary: 'Suspend a tenant (Super Admin)' })
   async suspend(@Param('id') id: string) {
     return this.tenantsService.suspend(id);
+  }
+
+  @Patch(':id/extend')
+  @ApiOperation({ summary: 'Extend subscription (Super Admin)' })
+  async extend(@Param('id') id: string, @Body() data: { days: number }) {
+    return this.tenantsService.extendSubscription(id, data.days);
   }
 
   @Post(':id/social-accounts')

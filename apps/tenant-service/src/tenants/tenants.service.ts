@@ -5,13 +5,20 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateTenantDto, UpdateTenantDto,
   ConnectSocialAccountDto,
-  UpdateSystemSettingsDto
+  UpdateSystemSettingsDto,
+  UpdateExpiryTemplatesDto
 } from './dto/tenant.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class TenantsService {
   private readonly logger = new Logger(TenantsService.name);
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private httpService: HttpService
+  ) {}
 
   // ─── Create Tenant ────────────────────────────────────────────
   async create(ownerId: string, dto: CreateTenantDto) {
@@ -165,11 +172,18 @@ export class TenantsService {
 
   // ─── All Tenants (Super Admin) ────────────────────────────────
   async findAll(page = 1, limit = 20, search?: string) {
-    const where: any = {};
+    const where: any = {
+      slug: { not: 'system' }
+    };
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
+      where.AND = [
+        { slug: { not: 'system' } },
+        {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { slug: { contains: search, mode: 'insensitive' } },
+          ]
+        }
       ];
     }
 
@@ -218,6 +232,172 @@ export class TenantsService {
   }
 
   // ─── Get Plans ────────────────────────────────────────────────
+  // ─── Extend Subscription (Super Admin) ───────────────────────
+  async extendSubscription(id: string, days: number) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const currentExpiry = tenant.expiresAt || new Date();
+    const newExpiry = new Date(currentExpiry);
+    newExpiry.setDate(newExpiry.getDate() + days);
+
+    return this.prisma.tenant.update({
+      where: { id },
+      data: { expiresAt: newExpiry, status: 'ACTIVE' },
+    });
+  }
+
+  // ─── System Templates (Super Admin) ───────────────────────────
+  async createTemplate(dto: any) {
+    return this.prisma.systemTemplate.create({ data: dto });
+  }
+
+  async findAllTemplates() {
+    const templates = await this.prisma.systemTemplate.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    // Add virtual templates for expiry if they aren't there
+    const settings = await this.getSystemSettings();
+    
+    const expiryWarning = {
+      id: 'system-expiry-warning',
+      name: 'Subscription Expiry (3 Days Before)',
+      subject: 'Action Required: Your subscription expires in 3 days',
+      content: settings.expiryWarningTemplate || 'Hello {{user_name}}, your subscription for {{tenant_name}} expires in 3 days. Upgrade here: {{upgrade_link}}',
+      isSystem: true,
+      category: 'SUBSCRIPTION',
+      updatedAt: settings.updatedAt
+    };
+    
+    const expiryFinal = {
+      id: 'system-expiry-final',
+      name: 'Subscription Expired (End Date)',
+      subject: 'Your subscription has expired',
+      content: settings.expiryFinalTemplate || 'Hello {{user_name}}, your subscription for {{tenant_name}} has expired. Renew now: {{upgrade_link}}',
+      isSystem: true,
+      category: 'SUBSCRIPTION',
+      updatedAt: settings.updatedAt
+    };
+    
+    return [expiryWarning, expiryFinal, ...templates];
+  }
+
+  async updateTemplate(id: string, dto: any) {
+    if (id === 'system-expiry-warning') {
+      return this.updateExpiryTemplates({ expiryWarningTemplate: dto.content });
+    }
+    if (id === 'system-expiry-final') {
+      return this.updateExpiryTemplates({ expiryFinalTemplate: dto.content });
+    }
+    return this.prisma.systemTemplate.update({
+      where: { id },
+      data: dto
+    });
+  }
+
+  async deleteTemplate(id: string) {
+    return this.prisma.systemTemplate.delete({ where: { id } });
+  }
+
+  // ─── Expiry Templates (Super Admin) ──────────────────────────
+  async updateExpiryTemplates(dto: UpdateExpiryTemplatesDto) {
+    return this.prisma.systemSetting.upsert({
+      where: { id: 'global' },
+      update: {
+        expiryWarningTemplate: dto.expiryWarningTemplate,
+        expiryFinalTemplate: dto.expiryFinalTemplate,
+      },
+      create: {
+        id: 'global',
+        expiryWarningTemplate: dto.expiryWarningTemplate,
+        expiryFinalTemplate: dto.expiryFinalTemplate,
+      },
+    });
+  }
+
+  // ─── Expiry Notifications Scheduler ──────────────────────────
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleExpiryNotifications() {
+    this.logger.log('Running subscription expiry check...');
+    
+    const settings = await this.getSystemSettings();
+    const now = new Date();
+    
+    // Check for 3 days before
+    const threeDaysLater = new Date();
+    threeDaysLater.setDate(now.getDate() + 3);
+    const threeDaysLaterEnd = new Date(threeDaysLater);
+    threeDaysLaterEnd.setHours(23, 59, 59, 999);
+    
+    const warningTenants = await this.prisma.tenant.findMany({
+      where: {
+        expiresAt: {
+          gte: threeDaysLater,
+          lte: threeDaysLaterEnd
+        },
+        status: 'ACTIVE'
+      }
+    });
+
+    for (const tenant of warningTenants) {
+      this.logger.log(`Sending 3-day expiry warning to tenant ${tenant.slug}`);
+      await this.sendExpiryEmail(tenant, settings.expiryWarningTemplate || 'Your subscription expires in 3 days. Please renew to avoid service interruption.');
+    }
+
+    // Check for today
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const expiredTenants = await this.prisma.tenant.findMany({
+      where: {
+        expiresAt: {
+          gte: now,
+          lte: todayEnd
+        },
+        status: 'ACTIVE'
+      }
+    });
+
+    for (const tenant of expiredTenants) {
+      this.logger.log(`Sending final expiry notice to tenant ${tenant.slug}`);
+      await this.sendExpiryEmail(tenant, settings.expiryFinalTemplate || 'Your subscription has expired. Service will be restricted.');
+      // Optionally update status to SUSPENDED here if you want immediate cutoff
+      // await this.prisma.tenant.update({ where: { id: tenant.id }, data: { status: 'SUSPENDED' } });
+    }
+  }
+
+  private async sendExpiryEmail(tenant: any, template: string) {
+    try {
+      const commServiceUrl = process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004';
+      const adminEmail = (tenant.settings as any)?.adminEmail || 'admin@' + tenant.slug + '.com';
+      const adminName = (tenant.settings as any)?.adminName || 'Valued Client';
+      const adminPhone = (tenant.settings as any)?.adminPhone || 'N/A';
+      
+      const appUrl = process.env.APP_URL || 'http://localhost:3100';
+      const upgradeLink = `${appUrl}/subscribe/${tenant.id}`;
+
+      // Replace placeholders
+      let message = template
+        .replace(/{{user_name}}/g, adminName)
+        .replace(/{{user_email}}/g, adminEmail)
+        .replace(/{{user_phone}}/g, adminPhone)
+        .replace(/{{tenant_name}}/g, tenant.name)
+        .replace(/{{upgrade_link}}/g, upgradeLink);
+
+      await firstValueFrom(
+        this.httpService.post(`${commServiceUrl}/notifications/internal/send-email`, {
+          to: adminEmail,
+          subject: 'Subscription Expiry Notification',
+          message: message,
+          tenantId: tenant.id
+        })
+      );
+    } catch (e) {
+      this.logger.error(`Failed to send expiry email for ${tenant.slug}: ${e.message}`);
+    }
+  }
+
   async getPlans() {
     return this.prisma.plan.findMany({
       where: { isActive: true },

@@ -43,8 +43,18 @@ export class ProxyService {
       return response.data;
     } catch (error: any) {
       const status = error.response?.status || 500;
-      const message = error.response?.data?.message || 'Service unavailable';
-      throw new HttpException(message, status);
+      const data = error.response?.data;
+      
+      // If we have a structured error from the downstream service, pass it through
+      if (data && (data.message || data.error)) {
+        throw new HttpException(data.message || data.error, status);
+      }
+
+      // If it's a connection error or other Axios error
+      const message = error.message || 'Service unavailable';
+      const detail = error.code ? ` (${error.code})` : '';
+      
+      throw new HttpException(`${message}${detail}`, status);
     }
   }
 }
