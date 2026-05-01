@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Headers, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Headers, HttpException, HttpStatus, Param } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 
 @Controller()
@@ -56,5 +56,36 @@ export class AppController {
   @Get('invoices/tenant')
   async getTenantInvoices(@Headers('x-tenant-id') tenantId: string) {
     return this.paymentService.getTenantInvoices(tenantId);
+  }
+
+  @Post('links')
+  async createPaymentLink(@Headers('x-user-id') userId: string, @Body() body: any) {
+    return this.paymentService.createPaymentLink(userId, body);
+  }
+
+  @Get('links')
+  async getPaymentLinks() {
+    return this.paymentService.getPaymentLinks();
+  }
+
+  @Get('links/:token/validate')
+  async validatePaymentLink(@Param('token') token: string) {
+    try {
+      return await this.paymentService.validatePaymentLink(token);
+    } catch (err: any) {
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Post('links/:token/checkout')
+  async checkoutPaymentLink(
+    @Param('token') token: string,
+    @Body() body: any
+  ) {
+    try {
+      return await this.paymentService.usePaymentLink(token, body.customerData, body.paymentData);
+    } catch (err: any) {
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
   }
 }

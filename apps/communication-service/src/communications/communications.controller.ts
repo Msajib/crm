@@ -134,7 +134,6 @@ export class CommunicationsController {
     return this.commsService.updateConversationNotes(tenantId, conversationId, body.notes);
   }
 
-  // ─── Internal Notification Endpoints ────────────────────────
   @Post('notifications/internal/send-email')
   @ApiOperation({ summary: 'Internal: Send email (called by other services)' })
   async internalSendEmail(@Body() body: any) {
@@ -152,4 +151,56 @@ export class CommunicationsController {
       type: 'IMPORT_COMPLETE',
     });
   }
+
+  // ─── SMS ────────────────────────────────────────────────────
+
+  @Post('sms')
+  @ApiOperation({ summary: 'Send a single SMS via Twilio' })
+  async sendSms(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() body: { to: string; message: string },
+  ) {
+    return this.commsService.sendSms(tenantId, body.to, body.message);
+  }
+
+  // ─── WHATSAPP ───────────────────────────────────────────────
+
+  @Post('whatsapp')
+  @ApiOperation({ summary: 'Send a WhatsApp template message via Meta Cloud API' })
+  async sendWhatsApp(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() body: { to: string; templateName: string; params?: string[] },
+  ) {
+    return this.commsService.sendWhatsApp(tenantId, body.to, body.templateName, body.params || []);
+  }
+
+  // ─── BULK ────────────────────────────────────────────────────
+
+  @Post('bulk-email')
+  @ApiOperation({ summary: 'Send bulk emails (used by campaign processor)' })
+  async bulkEmail(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() body: { messages: Array<{ to: string; subject: string; body: string }> },
+  ) {
+    return this.commsService.bulkEmail(tenantId, body.messages);
+  }
+
+  @Post('bulk-sms')
+  @ApiOperation({ summary: 'Send bulk SMS messages (used by campaign processor)' })
+  async bulkSms(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() body: { messages: Array<{ to: string; body: string }> },
+  ) {
+    return this.commsService.bulkSms(tenantId, body.messages);
+  }
+
+  @Post('bulk-whatsapp')
+  @ApiOperation({ summary: 'Send bulk WhatsApp messages (used by campaign processor)' })
+  async bulkWhatsApp(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() body: { messages: Array<{ to: string; templateName: string; params?: string[] }> },
+  ) {
+    return this.commsService.bulkWhatsApp(tenantId, body.messages);
+  }
 }
+

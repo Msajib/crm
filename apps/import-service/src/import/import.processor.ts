@@ -50,16 +50,18 @@ export class ImportProcessor extends WorkerHost {
 
       let successCount = 0;
       let failedCount = 0;
+      let duplicateCount = 0;
       const errorLog: any[] = [];
 
       const crmServiceUrl = process.env.CRM_SERVICE_URL || 'http://localhost:3003';
+      const commServiceUrl = process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004';
 
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         try {
           // 1. Validate mandatory fields
           if (!row.email) {
-             throw new Error('Missing email');
+            throw new Error('Missing email');
           }
 
           // 2. Map row to Contact DTO
@@ -70,17 +72,48 @@ export class ImportProcessor extends WorkerHost {
             phone: row.phone || row.mobile || '',
             company: row.company || '',
             source: 'IMPORT',
+            sourcePlatform: 'MANUAL',
             type: 'CONTACT',
           };
 
-          // 3. Create contact in CRM Service
-          // The CRM service should handle duplicate check if we provide tenantId
+          // 3. ── Duplicate Detection ─────────────────────────────
+          try {
+            const queryParams: string[] = [];
+            if (contactDto.email) queryParams.push(`email=${encodeURIComponent(contactDto.email)}`);
+            if (contactDto.phone) queryParams.push(`phone=${encodeURIComponent(contactDto.phone)}`);
+
+            const checkUrl = `${crmServiceUrl}/contacts?${queryParams.join('&')}&limit=1`;
+            const { data: existingResult } = await firstValueFrom(
+              this.httpService.get(checkUrl, {
+                headers: { 'x-tenant-id': tenantId },
+              }),
+            );
+
+            const existing = existingResult?.data || existingResult;
+            const hasMatch = Array.isArray(existing) ? existing.length > 0
+              : existing?.total > 0 || existing?.contacts?.length > 0;
+
+            if (hasMatch) {
+              duplicateCount++;
+              errorLog.push({
+                row: i + 1,
+                data: row,
+                reason: 'DUPLICATE',
+                detail: `Contact with email ${contactDto.email} already exists`,
+              });
+              continue; 
+            }
+          } catch (dupErr: any) {
+            this.logger.warn(`Duplicate check failed for row ${i + 1}: ${dupErr.message}`);
+          }
+
+          // 4. Create contact in CRM Service
           await firstValueFrom(
             this.httpService.post(`${crmServiceUrl}/contacts/internal/import`, {
               ...contactDto,
               tenantId,
               userId,
-            })
+            }),
           );
 
           successCount++;
@@ -93,14 +126,13 @@ export class ImportProcessor extends WorkerHost {
           });
         }
 
-        // Update progress every 10 rows
         if (i % 10 === 0 || i === data.length - 1) {
           await this.prisma.importJob.update({
             where: { id: jobId },
-            data: { 
+            data: {
               processedRows: i + 1,
               successRows: successCount,
-              failedRows: failedCount,
+              failedRows: failedCount + duplicateCount,
               errorLog: errorLog as any,
             },
           });
@@ -112,11 +144,22 @@ export class ImportProcessor extends WorkerHost {
         data: { status: 'COMPLETED' },
       });
 
-      // 4. Send Notification
+      // 5. ── Send completion notification (in-app) ───────────────
       await this.sendCompletionNotification(tenantId, userId, {
         fileName: job.data.fileName,
         successCount,
         failedCount,
+        duplicateCount,
+        jobId,
+      });
+
+      // 6. ── Send summary email to uploader ─────────────────────
+      await this.sendSummaryEmail(tenantId, userId, {
+        fileName: job.data.fileName,
+        successCount,
+        failedCount,
+        duplicateCount,
+        totalRows: data.length,
         jobId,
       });
 
@@ -137,10 +180,58 @@ export class ImportProcessor extends WorkerHost {
           tenantId,
           userId,
           stats,
-        })
+        }),
       );
     } catch (e) {
-      this.logger.error(`Failed to send notification: ${e.message}`);
+      this.logger.error(`Failed to send import notification: ${e.message}`);
+    }
+  }
+
+  private async sendSummaryEmail(tenantId: string, userId: string, stats: any) {
+    try {
+      const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+      const commServiceUrl = process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004';
+
+      let uploaderEmail: string | null = null;
+      try {
+        const { data: user } = await firstValueFrom(
+          this.httpService.get(`${authServiceUrl}/users/${userId}`, {
+            headers: { 'x-tenant-id': tenantId },
+          }),
+        );
+        uploaderEmail = user?.email || null;
+      } catch (err) {
+        this.logger.warn(`Could not fetch uploader email for userId ${userId}: ${err.message}`);
+      }
+
+      if (!uploaderEmail) return;
+
+      const subject = `Import Complete: ${stats.fileName}`;
+      const body = `
+        <h2>Import Summary</h2>
+        <p>Your file <strong>${stats.fileName}</strong> has been processed.</p>
+        <table cellpadding="8" cellspacing="0" style="border-collapse:collapse;">
+          <tr><td><strong>Total Rows</strong></td><td>${stats.totalRows}</td></tr>
+          <tr><td><strong>✅ Imported</strong></td><td>${stats.successCount}</td></tr>
+          <tr><td><strong>⚠️ Duplicates Skipped</strong></td><td>${stats.duplicateCount}</td></tr>
+          <tr><td><strong>❌ Failed</strong></td><td>${stats.failedCount}</td></tr>
+        </table>
+        <p>Job ID: <code>${stats.jobId}</code></p>
+      `;
+
+      await firstValueFrom(
+        this.httpService.post(`${commServiceUrl}/communications/email`, {
+          to: uploaderEmail,
+          subject,
+          body,
+        }, {
+          headers: { 'x-tenant-id': tenantId },
+        }),
+      );
+
+      this.logger.log(`Import summary email sent to ${uploaderEmail}`);
+    } catch (e) {
+      this.logger.error(`Failed to send import summary email: ${e.message}`);
     }
   }
 }

@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Put, Patch, Delete,
-  Body, Param, Query, Headers, HttpCode, HttpStatus,
+  Body, Param, Query, Headers, HttpCode, HttpStatus, ConflictException
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CrmService } from './crm.service';
@@ -41,6 +41,10 @@ export class CrmController {
     @Headers('x-user-id') userId: string,
     @Body() dto: CreateContactDto,
   ) {
+    const duplicate = await this.crmService.checkDuplicate(tenantId, dto.email, dto.phone);
+    if (duplicate) {
+      throw new ConflictException('Contact with this email or phone already exists');
+    }
     return this.crmService.createContact(tenantId, userId, dto);
   }
 
@@ -86,7 +90,7 @@ export class CrmController {
     return this.crmService.updateContact(id, tenantId, dto);
   }
 
-  @Post('contacts/:id/convert')
+  @Post('contacts/:id/convert-to-deal')
   @ApiOperation({ summary: 'Convert lead to deal' })
   async convertLead(
     @Headers('x-tenant-id') tenantId: string,
@@ -114,6 +118,26 @@ export class CrmController {
     @Param('id') contactId: string,
   ) {
     return this.crmService.getContactActivities(contactId, tenantId);
+  }
+
+  @Get('contacts/:id/timeline')
+  @ApiOperation({ summary: 'Get contact activity timeline (new)' })
+  async getContactTimeline(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') contactId: string,
+  ) {
+    return this.crmService.getContactTimeline(tenantId, contactId);
+  }
+
+  @Patch('contacts/:id/assign')
+  @ApiOperation({ summary: 'Assign contact to staff' })
+  async assignContact(
+    @Headers('x-tenant-id') tenantId: string,
+    @Headers('x-user-id') userId: string,
+    @Param('id') id: string,
+    @Body('assignedTo') assignedTo: string,
+  ) {
+    return this.crmService.assignContact(tenantId, id, assignedTo, userId);
   }
 
   @Post('activities')

@@ -485,10 +485,10 @@ export class CrmService {
   async convertLeadToDeal(contactId: string, tenantId: string, userId: string, data: any) {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        // 1. Update contact status to PROSPECT
+        // 1. Update contact status to CONVERTED
         await tx.contact.update({
           where: { id: contactId },
-          data: { status: 'PROSPECT' },
+          data: { status: 'CONVERTED' },
         });
 
         // 2. Create Deal
@@ -496,34 +496,90 @@ export class CrmService {
           data: {
             tenantId,
             contactId,
+            leadId: contactId,
             pipelineId: data.pipelineId,
             stageId: data.stageId,
             title: data.title || 'New Deal',
             value: data.value || 0,
             assignedTo: userId,
             status: 'OPEN',
+            closeDate: data.closeDate ? new Date(data.closeDate) : undefined,
+            convertedAt: new Date(),
           },
         });
 
-        // 3. Log Activity
+        // 3. Log Activity on Contact
         await tx.activity.create({
           data: {
             tenantId,
             contactId,
+            userId,
+            type: 'NOTE',
+            subject: 'Converted to Deal',
+            notes: `Lead converted to deal: ${deal.title}`,
+          },
+        });
+
+        // 4. Log Activity on Deal
+        await tx.activity.create({
+          data: {
+            tenantId,
             dealId: deal.id,
             userId,
             type: 'NOTE',
-            subject: 'Lead Converted',
-            notes: `Lead converted to deal: ${deal.title}`,
+            subject: 'Created from Lead',
+            notes: `Deal created from lead.`,
           },
         });
 
         return deal;
       });
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Failed to convert lead ${contactId}: ${error.message}`);
       throw error;
     }
+  }
+
+  async getContactTimeline(tenantId: string, contactId: string) {
+    return this.prisma.activity.findMany({
+      where: { contactId, tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async assignContact(tenantId: string, contactId: string, staffUserId: string, currentUserId: string) {
+    const contact = await this.prisma.contact.update({
+      where: { id: contactId, tenantId },
+      data: { assignedTo: staffUserId },
+    });
+    
+    await this.prisma.activity.create({
+      data: {
+        tenantId,
+        contactId,
+        userId: currentUserId,
+        type: 'NOTE',
+        subject: 'Contact Assigned',
+        notes: `Contact assigned to user ${staffUserId}`,
+      },
+    });
+
+    return contact;
+  }
+
+  async checkDuplicate(tenantId: string, email?: string, phone?: string) {
+    if (!email && !phone) return null;
+    
+    const conditions = [];
+    if (email) conditions.push({ email });
+    if (phone) conditions.push({ phone });
+    
+    return this.prisma.contact.findFirst({
+      where: {
+        tenantId,
+        OR: conditions,
+      },
+    });
   }
 
   // ═══════════════ DASHBOARD STATS ════════════════════════════

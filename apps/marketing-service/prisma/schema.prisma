@@ -66,6 +66,11 @@ model Campaign {
   leadIds        String[]  @map("lead_ids")
   processedCount Int       @default(0) @map("processed_count")
   failedCount    Int       @default(0) @map("failed_count")
+  sentCount      Int       @default(0) @map("sent_count")
+  deliveredCount Int       @default(0) @map("delivered_count")
+  openCount      Int       @default(0) @map("open_count")
+  replyCount     Int       @default(0) @map("reply_count")
+  answeredCount  Int       @default(0) @map("answered_count") // for voice calls
   errorMessage   String?   @map("error_message")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")

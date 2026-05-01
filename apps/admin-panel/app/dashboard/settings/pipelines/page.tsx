@@ -123,7 +123,7 @@ export default function PipelineSettings() {
       { tempId: '3', name: 'Proposal', order: 3, color: '#3b82f6', probability: 60 },
       { tempId: '4', name: 'Negotiation', order: 4, color: '#8b5cf6', probability: 80 },
       { tempId: '5', name: 'Won', order: 5, color: '#10b981', probability: 100 },
-    ]
+    ] as any[]
   });
 
   const fetchPipelines = async () => {
@@ -160,7 +160,7 @@ export default function PipelineSettings() {
           { tempId: '3', name: 'Proposal', order: 3, color: '#3b82f6', probability: 60 },
           { tempId: '4', name: 'Negotiation', order: 4, color: '#8b5cf6', probability: 80 },
           { tempId: '5', name: 'Won', order: 5, color: '#10b981', probability: 100 },
-        ]
+        ] as any[]
       });
     } catch (err) {
       toast.error('Failed to create pipeline');
@@ -210,8 +210,8 @@ export default function PipelineSettings() {
 
     if (isNew) {
       setNewPipeline((prev) => {
-        const oldIndex = prev.stages.findIndex(s => (s.tempId || s.id) === active.id);
-        const newIndex = prev.stages.findIndex(s => (s.tempId || s.id) === over.id);
+        const oldIndex = prev.stages.findIndex((s: any) => (s.tempId || s.id) === active.id);
+        const newIndex = prev.stages.findIndex((s: any) => (s.tempId || s.id) === over.id);
         return { ...prev, stages: arrayMove(prev.stages, oldIndex, newIndex) };
       });
     } else {
@@ -403,7 +403,7 @@ export default function PipelineSettings() {
                    modifiers={[restrictToVerticalAxis]}
                  >
                    <SortableContext 
-                     items={newPipeline.stages.map(s => s.tempId || s.id)} 
+                     items={newPipeline.stages.map((s: any) => s.tempId || s.id)} 
                      strategy={verticalListSortingStrategy}
                    >
                      <div className="space-y-3">

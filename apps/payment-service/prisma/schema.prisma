@@ -72,3 +72,36 @@ model PlanPurchaseEvent {
   @@index([tenantId])
   @@map("plan_purchase_events")
 }
+
+model PaymentLink {
+  id            String    @id @default(uuid())
+  token         String    @unique
+  type          String    // SUBSCRIPTION, ONETIME
+  planId        String?   @map("plan_id")
+  planName      String?   @map("plan_name")
+  customPrice   Float?    @map("custom_price")
+  currency      String    @default("USD")
+  durationDays  Int?      @map("duration_days")
+  description   String?   @db.Text
+  maxUses       Int       @default(1) @map("max_uses")
+  usedCount     Int       @default(0) @map("used_count")
+  affiliateId   String?   @map("affiliate_id")
+  commissionPct Float?    @map("commission_pct")
+  expiresAt     DateTime? @map("expires_at")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdBy     String    @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("payment_links")
+}
+
+model PaymentLinkUse {
+  id        String   @id @default(uuid())
+  linkId    String   @map("link_id")
+  tenantId  String   @map("tenant_id")
+  invoiceId String?  @map("invoice_id")
+  usedAt    DateTime @default(now()) @map("used_at")
+
+  @@map("payment_link_uses")
+}

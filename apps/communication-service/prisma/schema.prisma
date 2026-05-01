@@ -26,16 +26,48 @@ model EmailLog {
 }
 
 model CallLog {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  from         String
+  to           String
+  duration     Int      @default(0) // in seconds
+  status       String   // COMPLETED, MISSED, BUSY, NO_ANSWER, VOICEMAIL
+  recordingUrl String?  @map("recording_url")
+  transcript   String?  @db.Text
+  direction    String   @default("OUTBOUND") // OUTBOUND | INBOUND
+  provider     String?  // TWILIO | VONAGE | SIP
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("call_logs")
+}
+
+model SmsLog {
   id        String   @id @default(uuid())
   tenantId  String   @map("tenant_id")
   from      String
   to        String
-  duration  Int      // in seconds
-  status    String   // COMPLETED, MISSED, BUSY
+  body      String
+  status    String   @default("SENT") // SENT | FAILED | DELIVERED
+  provider  String?  // TWILIO | VONAGE
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([tenantId])
-  @@map("call_logs")
+  @@map("sms_logs")
+}
+
+model WhatsAppLog {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  to           String
+  body         String
+  templateName String?  @map("template_name")
+  status       String   @default("SENT") // SENT | DELIVERED | READ | FAILED
+  messageId    String?  @map("message_id") // from Meta API
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("whatsapp_logs")
 }
 
 model EmailConfig {

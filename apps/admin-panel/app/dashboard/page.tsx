@@ -69,7 +69,7 @@ export default function DashboardPage() {
     if (showRefresh) setRefreshing(true);
     try {
       const [statsRes, insightsRes, campRes] = await Promise.all([
-        api.get('/dashboard/stats').catch(err => {
+        api.get('/analytics/dashboard').catch(err => {
           console.warn('Dashboard stats fetch failed', err);
           return null;
         }),

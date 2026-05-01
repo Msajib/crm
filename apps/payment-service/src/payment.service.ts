@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class PaymentService {
@@ -181,5 +182,97 @@ export class PaymentService {
       this.logger.error(`Failed to notify super admin: ${error.message}`);
       // Don't throw here to avoid failing the whole purchase flow
     }
+  }
+
+  // ─── Payment Links ───────────────────────────────────
+
+  async createPaymentLink(userId: string, dto: any) {
+    const token = crypto.randomBytes(16).toString('hex');
+    return this.prisma.paymentLink.create({
+      data: {
+        token,
+        type: dto.type || 'SUBSCRIPTION',
+        planId: dto.planId,
+        planName: dto.planName,
+        customPrice: dto.customPrice,
+        currency: dto.currency || 'USD',
+        durationDays: dto.durationDays,
+        description: dto.description,
+        maxUses: dto.maxUses || 1,
+        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+        createdBy: userId,
+      }
+    });
+  }
+
+  async getPaymentLinks() {
+    return this.prisma.paymentLink.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async validatePaymentLink(token: string) {
+    const link = await this.prisma.paymentLink.findUnique({ where: { token } });
+    if (!link) throw new Error('Invalid payment link');
+    if (!link.isActive) throw new Error('Payment link is inactive');
+    if (link.expiresAt && link.expiresAt < new Date()) throw new Error('Payment link expired');
+    if (link.maxUses > 0 && link.usedCount >= link.maxUses) throw new Error('Payment link use limit reached');
+    return link;
+  }
+
+  async usePaymentLink(token: string, customerData: any, paymentData: any) {
+    const link = await this.validatePaymentLink(token);
+
+    this.logger.log(`Charging ${link.customPrice} via Stripe for token ${token}`);
+
+    const tenantUrl = process.env.TENANT_SERVICE_URL || 'http://localhost:3002';
+    const tenantRes = await fetch(`${tenantUrl}/tenants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: customerData.businessName,
+        slug: customerData.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        planId: link.planId,
+        planName: link.planName,
+        status: 'ACTIVE',
+      })
+    });
+    const tenant = await tenantRes.json();
+    if (!tenant || !tenant.id) throw new Error('Failed to create tenant');
+
+    const authUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+    await fetch(`${authUrl}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: customerData.email,
+        password: crypto.randomBytes(8).toString('hex') + 'Aa1!',
+        firstName: customerData.name?.split(' ')[0] || 'User',
+        lastName: customerData.name?.split(' ').slice(1).join(' ') || '',
+        tenantId: tenant.id,
+      })
+    });
+
+    await this.prisma.paymentLink.update({
+      where: { id: link.id },
+      data: { usedCount: { increment: 1 } }
+    });
+
+    await this.prisma.paymentLinkUse.create({
+      data: {
+        linkId: link.id,
+        tenantId: tenant.id,
+      }
+    });
+
+    await this.sendInvoiceEmail({
+      to: customerData.email,
+      customerName: customerData.name,
+      amount: link.customPrice?.toString() || '0',
+      planName: link.planName,
+      invoiceId: 'NEW-SUB'
+    });
+
+    return { success: true, tenantId: tenant.id, message: 'Account created' };
   }
 }

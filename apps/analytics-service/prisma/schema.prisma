@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/analytics-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ANALYTICS_DATABASE_URL")
+}
+
+model AnalyticsSnapshot {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  period    String
+  metrics   Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, period])
+  @@map("analytics_snapshots")
+}

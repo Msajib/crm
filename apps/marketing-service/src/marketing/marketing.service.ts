@@ -128,20 +128,36 @@ export class MarketingService {
       return;
     }
 
-    // 3. Fetch full lead details (In production, use real API)
-    // For now, we simulate or use the socialApi service
+    // 3. Fetch full lead details from Facebook Lead Gen API
     let leadInfo: any = {
       firstName: 'Social',
       lastName: 'Lead',
       email: `lead_${data.leadgenId}@example.com`,
       phone: '+1234567890',
-      source: `${platform}_ADS`
+      source: `${platform}_ADS`,
     };
 
     try {
-      // leadInfo = await this.socialApi.getFacebookLeadDetails(data.leadgenId, account.accessToken);
+      const fbUrl = `https://graph.facebook.com/${data.leadgenId}?fields=field_data&access_token=${account.accessToken}`;
+      const { data: leadData } = await axios.get(fbUrl);
+      const fields = leadData.field_data || [];
+
+      const get = (key: string) =>
+        fields.find((f: any) => f.name === key)?.values?.[0] || '';
+
+      const fullName = get('full_name') || `${get('first_name')} ${get('last_name')}`;
+      const nameParts = fullName.trim().split(' ');
+
+      leadInfo = {
+        firstName: nameParts[0] || 'Social',
+        lastName: nameParts.slice(1).join(' ') || 'Lead',
+        email: get('email') || `lead_${data.leadgenId}@example.com`,
+        phone: get('phone_number') || get('phone') || '',
+        source: `${platform}_ADS`,
+      };
+      this.logger.log(`Fetched real lead data for ${data.leadgenId}: ${leadInfo.email}`);
     } catch (err) {
-      this.logger.warn('Failed to fetch lead details from API, using payload data.');
+      this.logger.warn(`Failed to fetch lead from Facebook API (${err.message}), using payload data.`);
     }
 
     // 4. Create Contact in CRM Service
@@ -499,28 +515,144 @@ export class MarketingService {
 
   private async processSmsCampaign(campaign: any) {
     this.logger.log(`Processing SMS campaign ${campaign.id}`);
-    // Future: Connect to CommunicationService SMS endpoint
-    await this.prisma.campaign.update({
-      where: { id: campaign.id },
-      data: { status: 'COMPLETED', processedCount: campaign.leadIds.length }
-    });
-  }
+    const commsUrl = process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004';
+    const crmUrl = process.env.CRM_SERVICE_URL || 'http://localhost:3003';
 
-  private async processCallCampaign(campaign: any) {
-    this.logger.log(`Processing Call campaign ${campaign.id}`);
-    // Future: Connect to CommunicationService Call/VoIP endpoint
+    let processed = 0;
+    let failed = 0;
+    let sent = 0;
+
+    // 1. Get SMS template text from campaign templateId or use description as fallback
+    const templateText = campaign.description || 'Hi {{lead.first_name}}, we have an update for you!';
+
+    for (let i = 0; i < campaign.leadIds.length; i++) {
+      const leadId = campaign.leadIds[i];
+      try {
+        // 2. Fetch lead data
+        const { data: lead } = await axios.get(`${crmUrl}/contacts/${leadId}`, {
+          headers: { 'x-tenant-id': campaign.tenantId },
+        });
+
+        // 3. Render SMS body — replace template variables
+        const body = templateText
+          .replace(/{{lead\.first_name}}/g, lead.firstName || '')
+          .replace(/{{lead\.last_name}}/g, lead.lastName || '')
+          .replace(/{{lead\.email}}/g, lead.email || '')
+          .replace(/{{lead\.phone}}/g, lead.phone || '')
+          .replace(/{{lead\.company}}/g, lead.company || '');
+
+        if (!lead.phone) {
+          throw new Error('Lead has no phone number');
+        }
+
+        // 4. Send via communication-service
+        await axios.post(`${commsUrl}/communications/sms`, {
+          to: lead.phone,
+          message: body,
+        }, {
+          headers: { 'x-tenant-id': campaign.tenantId },
+        });
+
+        processed++;
+        sent++;
+      } catch (err) {
+        failed++;
+        this.logger.warn(`SMS campaign ${campaign.id} — lead ${leadId} failed: ${err.message}`);
+      }
+
+      // 5. Save progress every 10 leads
+      if ((i + 1) % 10 === 0 || i === campaign.leadIds.length - 1) {
+        await this.prisma.campaign.update({
+          where: { id: campaign.id },
+          data: { processedCount: processed, failedCount: failed, sentCount: sent },
+        });
+      }
+    }
+
     await this.prisma.campaign.update({
       where: { id: campaign.id },
-      data: { status: 'COMPLETED', processedCount: campaign.leadIds.length }
+      data: { status: 'COMPLETED', processedCount: processed, failedCount: failed, sentCount: sent },
     });
   }
 
   private async processWhatsappCampaign(campaign: any) {
     this.logger.log(`Processing WhatsApp campaign ${campaign.id}`);
-    // Future: Connect to CommunicationService WhatsApp endpoint
+    const commsUrl = process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004';
+    const crmUrl = process.env.CRM_SERVICE_URL || 'http://localhost:3003';
+
+    let processed = 0;
+    let failed = 0;
+    let sent = 0;
+
+    const templateName = campaign.templateId || 'default_campaign_template';
+
+    for (let i = 0; i < campaign.leadIds.length; i++) {
+      const leadId = campaign.leadIds[i];
+      try {
+        const { data: lead } = await axios.get(`${crmUrl}/contacts/${leadId}`, {
+          headers: { 'x-tenant-id': campaign.tenantId },
+        });
+
+        if (!lead.phone) throw new Error('Lead has no phone number');
+
+        await axios.post(`${commsUrl}/communications/whatsapp`, {
+          to: lead.phone,
+          templateName,
+          params: [lead.firstName || 'Valued Customer', campaign.name],
+        }, {
+          headers: { 'x-tenant-id': campaign.tenantId },
+        });
+
+        processed++;
+        sent++;
+      } catch (err) {
+        failed++;
+        this.logger.warn(`WhatsApp campaign ${campaign.id} — lead ${leadId} failed: ${err.message}`);
+      }
+
+      if ((i + 1) % 10 === 0 || i === campaign.leadIds.length - 1) {
+        await this.prisma.campaign.update({
+          where: { id: campaign.id },
+          data: { processedCount: processed, failedCount: failed, sentCount: sent },
+        });
+      }
+    }
+
     await this.prisma.campaign.update({
       where: { id: campaign.id },
-      data: { status: 'COMPLETED', processedCount: campaign.leadIds.length }
+      data: { status: 'COMPLETED', processedCount: processed, failedCount: failed, sentCount: sent },
     });
+  }
+
+  private async processCallCampaign(campaign: any) {
+    this.logger.log(`Processing Call campaign ${campaign.id}`);
+    const voiceUrl = process.env.VOICE_SERVICE_URL || 'http://localhost:3011';
+
+    try {
+      const { data: result } = await axios.post(`${voiceUrl}/voice/campaign`, {
+        tenantId: campaign.tenantId,
+        campaignId: campaign.id,
+        leadIds: campaign.leadIds,
+        templateText: campaign.description || 'Hello {{firstName}}, this is a call from our team.',
+      }, {
+        headers: { 'x-tenant-id': campaign.tenantId },
+      });
+
+      await this.prisma.campaign.update({
+        where: { id: campaign.id },
+        data: {
+          status: 'COMPLETED',
+          processedCount: result.processed || campaign.leadIds.length,
+          failedCount: result.failed || 0,
+          answeredCount: result.answered || 0,
+        },
+      });
+    } catch (err) {
+      this.logger.error(`Call campaign ${campaign.id} failed: ${err.message}`);
+      await this.prisma.campaign.update({
+        where: { id: campaign.id },
+        data: { status: 'FAILED', errorMessage: err.message },
+      });
+    }
   }
 }

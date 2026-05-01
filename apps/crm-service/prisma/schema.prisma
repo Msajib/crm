@@ -26,13 +26,17 @@ model Contact {
   address      String?
   companyId    String?       @map("company_id")
   tags         String[]      @default([])
-  source       String?       // website, social, referral, etc.
-  status       ContactStatus @default(LEAD)
-  customFields Json          @default("{}") @map("custom_fields")
-  notes        String?
-  avatarUrl    String?       @map("avatar_url")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  source         String?       // website, social, referral, etc.
+  sourcePlatform String?       @map("source_platform")
+  aiScore        Int?          @map("ai_score")
+  lastContactedAt DateTime?    @map("last_contacted_at")
+  rawPayload     Json?         @map("raw_payload")
+  status         ContactStatus @default(LEAD)
+  customFields   Json          @default("{}") @map("custom_fields")
+  notes          String?
+  avatarUrl      String?       @map("avatar_url")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
 
   company    Company?    @relation(fields: [companyId], references: [id])
   deals      Deal[]
@@ -112,6 +116,8 @@ model Deal {
   wonAt       DateTime?  @map("won_at")
   lostAt      DateTime?  @map("lost_at")
   lostReason  String?   @map("lost_reason")
+  leadId      String?   @map("lead_id")
+  convertedAt DateTime? @map("converted_at")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
@@ -191,10 +197,13 @@ model Webhook {
 // ─── Enums ────────────────────────────────────────────────────
 enum ContactStatus {
   LEAD
+  CONTACTED
+  ENGAGED
   PROSPECT
   CUSTOMER
   INACTIVE
   LOST
+  CONVERTED
 }
 
 enum DealStatus {

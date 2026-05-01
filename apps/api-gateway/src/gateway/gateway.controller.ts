@@ -33,6 +33,7 @@ const SERVICE_ROUTES: Record<string, string> = {
   import: process.env.IMPORT_SERVICE_URL || 'http://localhost:3009',
   webhooks: process.env.CRM_SERVICE_URL || 'http://localhost:3003',
   credentials: process.env.CREDENTIAL_SERVICE_URL || 'http://localhost:3010',
+  voice: process.env.VOICE_SERVICE_URL || 'http://localhost:3011',
 };
 
 @ApiTags('gateway')
@@ -118,6 +119,7 @@ export class GatewayController {
       'payments': '',
       'roles': '',
       'credentials': '/credentials',
+      'voice': '/voice',
     };
 
     const prefix = servicePrefixes[service] || `/${service}`;

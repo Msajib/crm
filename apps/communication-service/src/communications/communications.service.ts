@@ -1,10 +1,12 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailSenderService } from './email-sender.service';
+import axios from 'axios';
 
 @Injectable()
 export class CommunicationsService {
   private readonly logger = new Logger(CommunicationsService.name);
+  private readonly credentialServiceUrl = process.env.CREDENTIAL_SERVICE_URL || 'http://localhost:3010';
 
   constructor(
     private prisma: PrismaService,
@@ -259,5 +261,167 @@ export class CommunicationsService {
       where: { id: conversationId, tenantId },
       data: { notes }
     });
+  }
+
+  // ─── PRIVATE HELPERS ───────────────────────────────────────
+
+  private async getDecryptedCredential(tenantId: string, type: string): Promise<any> {
+    try {
+      const { data } = await axios.get(
+        `${this.credentialServiceUrl}/credentials/reveal/${type}`,
+        { headers: { 'x-tenant-id': tenantId } },
+      );
+      return data.credentials;
+    } catch (err) {
+      this.logger.error(`Failed to fetch ${type} credential for tenant ${tenantId}: ${err.message}`);
+      throw new BadRequestException(`${type} credentials not configured. Please add them in Settings > Integrations.`);
+    }
+  }
+
+  // ─── SMS ────────────────────────────────────────────────────
+
+  async sendSms(tenantId: string, to: string, body: string) {
+    const creds = await this.getDecryptedCredential(tenantId, 'SMS');
+    const { accountSid, authToken, fromNumber } = creds;
+
+    if (!accountSid || !authToken || !fromNumber) {
+      throw new BadRequestException('Incomplete SMS credentials (accountSid, authToken, fromNumber required).');
+    }
+
+    let status = 'SENT';
+    let twilioMessageSid: string | null = null;
+
+    try {
+      const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+      const params = new URLSearchParams({ To: to, From: fromNumber, Body: body });
+      const { data } = await axios.post(url, params.toString(), {
+        auth: { username: accountSid, password: authToken },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+      twilioMessageSid = data.sid;
+      status = 'SENT';
+      this.logger.log(`SMS sent to ${to} via Twilio. SID: ${data.sid}`);
+    } catch (err) {
+      status = 'FAILED';
+      this.logger.error(`Twilio SMS failed to ${to}: ${err.response?.data?.message || err.message}`);
+    }
+
+    return this.prisma.smsLog.create({
+      data: {
+        tenantId,
+        from: fromNumber,
+        to,
+        body,
+        status,
+        provider: 'TWILIO',
+      },
+    });
+  }
+
+  // ─── WHATSAPP ───────────────────────────────────────────────
+
+  async sendWhatsApp(tenantId: string, to: string, templateName: string, params: string[] = []) {
+    const creds = await this.getDecryptedCredential(tenantId, 'WHATSAPP');
+    const { accessToken, phoneNumberId } = creds;
+
+    if (!accessToken || !phoneNumberId) {
+      throw new BadRequestException('Incomplete WhatsApp credentials (accessToken, phoneNumberId required).');
+    }
+
+    const components = params.length > 0 ? [{
+      type: 'body',
+      parameters: params.map((p) => ({ type: 'text', text: p })),
+    }] : [];
+
+    let status = 'SENT';
+    let messageId: string | null = null;
+    // Build the message body string for logging
+    const bodyText = `[Template: ${templateName}] ${params.join(', ')}`;
+
+    try {
+      const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+      const { data } = await axios.post(url, {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'en_US' },
+          components,
+        },
+      }, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      messageId = data.messages?.[0]?.id || null;
+      status = 'SENT';
+      this.logger.log(`WhatsApp message sent to ${to}. Message ID: ${messageId}`);
+    } catch (err) {
+      status = 'FAILED';
+      this.logger.error(`WhatsApp send failed to ${to}: ${err.response?.data?.error?.message || err.message}`);
+    }
+
+    return this.prisma.whatsAppLog.create({
+      data: {
+        tenantId,
+        to,
+        body: bodyText,
+        templateName,
+        status,
+        messageId,
+      },
+    });
+  }
+
+  // ─── BULK METHODS ───────────────────────────────────────────
+
+  async bulkEmail(tenantId: string, messages: Array<{ to: string; subject: string; body: string }>) {
+    let sent = 0;
+    let failed = 0;
+    for (const msg of messages) {
+      try {
+        await this.sendEmail(tenantId, msg);
+        sent++;
+      } catch (err) {
+        failed++;
+        this.logger.warn(`Bulk email failed to ${msg.to}: ${err.message}`);
+      }
+    }
+    this.logger.log(`Bulk email done for tenant ${tenantId}: sent=${sent}, failed=${failed}`);
+    return { sent, failed };
+  }
+
+  async bulkSms(tenantId: string, messages: Array<{ to: string; body: string }>) {
+    let sent = 0;
+    let failed = 0;
+    for (const msg of messages) {
+      try {
+        await this.sendSms(tenantId, msg.to, msg.body);
+        sent++;
+      } catch (err) {
+        failed++;
+        this.logger.warn(`Bulk SMS failed to ${msg.to}: ${err.message}`);
+      }
+    }
+    this.logger.log(`Bulk SMS done for tenant ${tenantId}: sent=${sent}, failed=${failed}`);
+    return { sent, failed };
+  }
+
+  async bulkWhatsApp(tenantId: string, messages: Array<{ to: string; templateName: string; params?: string[] }>) {
+    let sent = 0;
+    let failed = 0;
+    for (const msg of messages) {
+      try {
+        await this.sendWhatsApp(tenantId, msg.to, msg.templateName, msg.params || []);
+        sent++;
+      } catch (err) {
+        failed++;
+        this.logger.warn(`Bulk WhatsApp failed to ${msg.to}: ${err.message}`);
+      }
+    }
+    this.logger.log(`Bulk WhatsApp done for tenant ${tenantId}: sent=${sent}, failed=${failed}`);
+    return { sent, failed };
   }
 }

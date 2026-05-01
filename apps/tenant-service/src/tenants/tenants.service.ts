@@ -317,58 +317,94 @@ export class TenantsService {
     });
   }
 
-  // ─── Expiry Notifications Scheduler ──────────────────────────
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async handleExpiryNotifications() {
-    this.logger.log('Running subscription expiry check...');
-    
+  // ─── Subscription Expiry Cron — 9 AM Daily ───────────────────
+  @Cron('0 9 * * *')
+  async checkSubscriptionExpiry() {
+    this.logger.log('Running daily subscription expiry check at 9 AM...');
+
     const settings = await this.getSystemSettings();
     const now = new Date();
-    
-    // Check for 3 days before
-    const threeDaysLater = new Date();
-    threeDaysLater.setDate(now.getDate() + 3);
-    const threeDaysLaterEnd = new Date(threeDaysLater);
-    threeDaysLaterEnd.setHours(23, 59, 59, 999);
-    
-    const warningTenants = await this.prisma.tenant.findMany({
+
+    // ── 1. 14-day warning (new) ──────────────────────────────────
+    const warn14Start = new Date(now);
+    warn14Start.setDate(now.getDate() + 14);
+    warn14Start.setHours(0, 0, 0, 0);
+
+    const warn14End = new Date(warn14Start);
+    warn14End.setHours(23, 59, 59, 999);
+
+    const tenants14Day = await this.prisma.tenant.findMany({
       where: {
-        expiresAt: {
-          gte: threeDaysLater,
-          lte: threeDaysLaterEnd
-        },
-        status: 'ACTIVE'
-      }
+        expiresAt: { gte: warn14Start, lte: warn14End },
+        status: 'ACTIVE',
+      },
     });
 
-    for (const tenant of warningTenants) {
-      this.logger.log(`Sending 3-day expiry warning to tenant ${tenant.slug}`);
-      await this.sendExpiryEmail(tenant, settings.expiryWarningTemplate || 'Your subscription expires in 3 days. Please renew to avoid service interruption.');
+    for (const tenant of tenants14Day) {
+      this.logger.log(`[14-day warning] Tenant: ${tenant.slug}`);
+      await this.sendExpiryEmail(
+        tenant,
+        settings.expiryWarningTemplate ||
+          'Hello {{user_name}}, your {{tenant_name}} subscription expires in 14 days. Renew now: {{upgrade_link}}',
+        '14-Day Subscription Renewal Reminder',
+      );
     }
 
-    // Check for today
-    const todayEnd = new Date(now);
-    todayEnd.setHours(23, 59, 59, 999);
+    // ── 2. 3-day urgent warning ──────────────────────────────────
+    const warn3Start = new Date(now);
+    warn3Start.setDate(now.getDate() + 3);
+    warn3Start.setHours(0, 0, 0, 0);
 
+    const warn3End = new Date(warn3Start);
+    warn3End.setHours(23, 59, 59, 999);
+
+    const tenants3Day = await this.prisma.tenant.findMany({
+      where: {
+        expiresAt: { gte: warn3Start, lte: warn3End },
+        status: 'ACTIVE',
+      },
+    });
+
+    for (const tenant of tenants3Day) {
+      this.logger.log(`[3-day urgent] Tenant: ${tenant.slug}`);
+      await this.sendExpiryEmail(
+        tenant,
+        settings.expiryWarningTemplate ||
+          'URGENT: Hello {{user_name}}, your {{tenant_name}} subscription expires in 3 days. Renew immediately: {{upgrade_link}}',
+        'Action Required: Your Subscription Expires in 3 Days',
+      );
+    }
+
+    // ── 3. Expired & still ACTIVE → suspend + send expired email ─
     const expiredTenants = await this.prisma.tenant.findMany({
       where: {
-        expiresAt: {
-          gte: now,
-          lte: todayEnd
-        },
-        status: 'ACTIVE'
-      }
+        expiresAt: { lt: now },
+        status: 'ACTIVE',
+      },
     });
 
     for (const tenant of expiredTenants) {
-      this.logger.log(`Sending final expiry notice to tenant ${tenant.slug}`);
-      await this.sendExpiryEmail(tenant, settings.expiryFinalTemplate || 'Your subscription has expired. Service will be restricted.');
-      // Optionally update status to SUSPENDED here if you want immediate cutoff
-      // await this.prisma.tenant.update({ where: { id: tenant.id }, data: { status: 'SUSPENDED' } });
+      this.logger.log(`[AUTO-SUSPEND] Tenant: ${tenant.slug} has expired. Suspending...`);
+
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { status: 'SUSPENDED' },
+      });
+
+      await this.sendExpiryEmail(
+        tenant,
+        settings.expiryFinalTemplate ||
+          'Hello {{user_name}}, your {{tenant_name}} subscription has expired and your account has been suspended. Renew now: {{upgrade_link}}',
+        'Your Subscription Has Expired — Account Suspended',
+      );
     }
+
+    this.logger.log(
+      `Expiry check complete. 14-day: ${tenants14Day.length}, 3-day: ${tenants3Day.length}, suspended: ${expiredTenants.length}`,
+    );
   }
 
-  private async sendExpiryEmail(tenant: any, template: string) {
+  private async sendExpiryEmail(tenant: any, template: string, subject?: string) {
     try {
       const commServiceUrl = process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004';
       const adminEmail = (tenant.settings as any)?.adminEmail || 'admin@' + tenant.slug + '.com';
@@ -389,7 +425,7 @@ export class TenantsService {
       await firstValueFrom(
         this.httpService.post(`${commServiceUrl}/notifications/internal/send-email`, {
           to: adminEmail,
-          subject: 'Subscription Expiry Notification',
+          subject: subject || 'Subscription Expiry Notification',
           message: message,
           tenantId: tenant.id
         })
