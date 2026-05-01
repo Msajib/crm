@@ -11,6 +11,7 @@ import {
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import * as dns from 'dns';
 
 @Injectable()
 export class TenantsService {
@@ -403,5 +404,67 @@ export class TenantsService {
       where: { isActive: true },
       orderBy: { price: 'asc' },
     });
+  }
+
+  // ─── Subdomain & Custom Domain ────────────────────────────────
+  async generateSubdomain(businessName: string): Promise<string> {
+    let slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const exists = await this.prisma.tenant.findUnique({ where: { subdomain: slug } });
+    if (exists) {
+      slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
+    }
+    return this.prisma.tenant.findUnique({ where: { slug } }).then((s) => s ? `${slug}-${Math.random().toString(36).substring(2, 6)}` : slug);
+  }
+
+  async provisionSubdomainForTenant(tenantId: string, baseName?: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+    const subdomain = await this.generateSubdomain(baseName || tenant.name);
+    return this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { subdomain },
+    });
+  }
+
+  async verifyCustomDomain(tenantId: string, domain: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    try {
+      const records = await dns.promises.resolveCname(domain);
+      const targetSubdomain = `${tenant.subdomain || tenant.slug}.crm.com`;
+
+      if (records.includes(targetSubdomain)) {
+        return this.prisma.tenant.update({
+          where: { id: tenantId },
+          data: { domainStatus: 'VERIFIED', domainVerified: true, domainVerifiedAt: new Date(), customDomain: domain }
+        });
+      }
+      return this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { domainStatus: 'FAILED', domainVerified: false, customDomain: domain }
+      });
+    } catch (e) {
+      return this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { domainStatus: 'FAILED', domainVerified: false, customDomain: domain }
+      });
+    }
+  }
+
+  async findBySlug(slug: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        OR: [
+          { slug },
+          { subdomain: slug }
+        ]
+      }
+    });
+    return tenant;
+  }
+
+  async findByDomain(domain: string) {
+    return this.prisma.tenant.findUnique({ where: { customDomain: domain } });
   }
 }

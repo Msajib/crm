@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
@@ -6,6 +6,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { GatewayController } from './gateway/gateway.controller';
 import { ProxyService } from './proxy/proxy.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { TenantResolutionMiddleware } from './middleware/tenant-resolution.middleware';
 
 @Module({
   imports: [
@@ -28,4 +29,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantResolutionMiddleware).forRoutes('*');
+  }
+}

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import DashboardLayout from '@/components/DashboardLayout';
 
@@ -29,7 +30,9 @@ import PremiumModal from '@/components/PremiumModal';
 export default function TasksPage() {
   return (
     <ModuleGuard moduleId="tasks">
-      <TasksContent />
+       <Suspense fallback={<div>Loading tasks...</div>}>
+          <TasksContent />
+       </Suspense>
     </ModuleGuard>
   );
 }
@@ -193,9 +196,21 @@ function TasksContent() {
     }
   };
 
+  const searchParams = useSearchParams();
+  const taskIdFromQuery = searchParams.get('id');
+
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  useEffect(() => {
+    if (taskIdFromQuery && tasks.length > 0) {
+      const task = tasks.find(t => t.id === taskIdFromQuery);
+      if (task) {
+        setSelectedTask(task);
+      }
+    }
+  }, [taskIdFromQuery, tasks]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,7 +227,7 @@ function TasksContent() {
       if (res.ok) {
         toast.success('Task created!');
         setShowAddModal(false);
-        setNewTask({ title: '', priority: 'MEDIUM', dueDate: '', status: 'TODO', description: '' });
+        setNewTask({ title: '', priority: 'MEDIUM', dueDate: '', status: 'TODO', description: '', assignedTo: '' });
         fetchTasks();
       }
     } catch (error) {
@@ -410,9 +425,10 @@ function TasksContent() {
               <label className="text-micro text-muted-foreground ml-2 uppercase tracking-widest font-black">Description / Context</label>
               <div className="rounded-3xl border border-border overflow-hidden bg-background/50">
                 <RichTextEditor 
-                  content={newTask.description} 
-                  onChange={html => setNewTask({...newTask, description: html})} 
+                  value={newTask.description} 
+                  onChange={(html: string) => setNewTask({...newTask, description: html})} 
                   placeholder="Add some context or specific sub-tasks..."
+                  mentions={staffList}
                 />
               </div>
            </div>
@@ -437,7 +453,7 @@ function TasksContent() {
               <label className="text-micro text-muted-foreground ml-2 uppercase tracking-widest font-black">Assign To Staff</label>
               <select value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})} className="w-full bg-muted border border-border rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none cursor-pointer">
                 <option value="">Admin (Unassigned)</option>
-                {staffList.map(staff => (
+                {staffList.map((staff: any) => (
                   <option key={staff.id} value={staff.id}>{staff.firstName} {staff.lastName}</option>
                 ))}
               </select>
@@ -495,7 +511,7 @@ function TasksContent() {
                      />
                      {showMentions && (
                        <div className="absolute bottom-full left-4 mb-2 w-64 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-[500]">
-                         {staffList.filter(s => `${s.firstName} ${s.lastName}`.toLowerCase().includes(mentionQuery)).map(staff => (
+                         {staffList.filter((s: any) => `${s.firstName} ${s.lastName}`.toLowerCase().includes(mentionQuery)).map((staff: any) => (
                            <div 
                              key={staff.id} 
                              onClick={() => insertMention(`${staff.firstName} ${staff.lastName}`)}
@@ -583,8 +599,9 @@ function TasksContent() {
                 <label className="text-micro text-muted-foreground ml-2 uppercase tracking-widest font-black">Description</label>
                 <div className="rounded-3xl border border-border overflow-hidden bg-background/50">
                   <RichTextEditor 
-                    content={editTask.description || ''} 
-                    onChange={html => setEditTask({...editTask, description: html})} 
+                    value={editTask.description || ''} 
+                    onChange={(html: string) => setEditTask({...editTask, description: html})} 
+                    mentions={staffList}
                   />
                 </div>
              </div>
@@ -609,7 +626,7 @@ function TasksContent() {
                 <label className="text-micro text-muted-foreground ml-2 uppercase tracking-widest font-black">Assign To Staff</label>
                 <select value={editTask.assignedTo || ''} onChange={e => setEditTask({...editTask, assignedTo: e.target.value})} className="w-full bg-muted border border-border rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none cursor-pointer">
                   <option value="">Admin (Unassigned)</option>
-                  {staffList.map(staff => (
+                  {staffList.map((staff: any) => (
                     <option key={staff.id} value={staff.id}>{staff.firstName} {staff.lastName}</option>
                   ))}
                 </select>
@@ -629,7 +646,7 @@ const priorityColors: any = {
 };
 
 function TaskCard({ task, staffList, onStatusChange, onDelete, onEdit, onClick, onDragStart }: any) {
-  const assignedStaff = staffList.find(s => s.id === task.assignedTo);
+  const assignedStaff = staffList.find((s: any) => s.id === task.assignedTo);
   const staffName = assignedStaff ? `${assignedStaff.firstName} ${assignedStaff.lastName}` : 'Unassigned';
   const staffAvatar = assignedStaff?.avatar;
 

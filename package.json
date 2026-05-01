@@ -16,8 +16,8 @@
     "db:migrate": "turbo run db:migrate",
     "db:studio": "turbo run db:studio",
     "db:init": "turbo run db:sync && npm run db:seed",
-    "db:reset": "cd apps/auth-service && npx prisma db push --force-reset && npx prisma db seed && cd ../tenant-service && npx prisma db push --accept-data-loss && cd ../crm-service && npx prisma db push --accept-data-loss",
-    "db:seed": "cd apps/auth-service && npx prisma db seed",
+    "db:reset": "cd apps/auth-service && npx prisma db push --force-reset && npx prisma db seed && cd ../tenant-service && npx prisma db push --accept-data-loss && npx prisma db seed && cd ../crm-service && npx prisma db push --accept-data-loss",
+    "db:seed": "cd apps/auth-service && npx prisma db seed && cd ../tenant-service && npx prisma db seed",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"

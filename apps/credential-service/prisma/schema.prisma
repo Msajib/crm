@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@prisma/credential-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CREDENTIAL_DATABASE_URL")
+}
+
+model TenantCredential {
+  id               String    @id @default(uuid())
+  tenantId         String    @map("tenant_id")
+  type             String    // AI | TTS | CALL | SMS | WHATSAPP | EMAIL
+  provider         String    // openai | elevenlabs | twilio | meta | etc.
+  encryptedCredentials String  @map("encrypted_credentials") @db.Text
+  isActive         Boolean   @default(true) @map("is_active")
+  lastTestedAt     DateTime? @map("last_tested_at")
+  testStatus       String    @default("UNTESTED") // OK | FAILED | UNTESTED
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tenantId, type])
+  @@index([tenantId])
+  @@map("tenant_credentials")
+}
+
+model FeatureGate {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+  gates    Json   // { email: true, sms: false, whatsapp: true, call: false, aiVoice: false, aiText: false }
+  
+  @@map("feature_gates")
+}

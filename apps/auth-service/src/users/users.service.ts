@@ -281,7 +281,7 @@ export class UsersService {
     return { success: true, count: superAdmins.length };
   }
 
-  async createNotification(userId: string, tenantId: string, title: string, message: string, type: string) {
+  async createNotification(userId: string, tenantId: string, title: string, message: string, type: string, link?: string) {
     return this.prisma.notification.create({
       data: {
         userId,
@@ -289,6 +289,7 @@ export class UsersService {
         title,
         message,
         type,
+        link,
       },
     });
   }

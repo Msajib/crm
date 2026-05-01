@@ -5,6 +5,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  HttpException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -79,7 +80,21 @@ export class AuthService {
       where: { email: dto.email },
     });
 
+    if (user && user.lockedUntil && user.lockedUntil > new Date()) {
+      throw new HttpException('Account is locked', 423);
+    }
+
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+      if (user) {
+        const failedCount = user.failedLoginCount + 1;
+        const updates: any = { failedLoginCount: failedCount };
+        if (failedCount >= 5) {
+          const lockTime = new Date();
+          lockTime.setMinutes(lockTime.getMinutes() + 15);
+          updates.lockedUntil = lockTime;
+        }
+        await this.prisma.user.update({ where: { id: user.id }, data: updates });
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -113,7 +128,7 @@ export class AuthService {
     // Update last login
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() },
+      data: { lastLoginAt: new Date(), failedLoginCount: 0, lockedUntil: null },
     });
 
     const tokens = await this.generateTokens(user);
@@ -214,6 +229,134 @@ export class AuthService {
         ? user.customRole.permissions
         : user.permissions;
     return this.sanitizeUser({ ...user, permissions: effectivePermissions });
+  }
+
+  // ─── Password Reset & Staff Creation ─────────────────────────
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) return { message: 'If email exists, a reset link was sent.' };
+
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    await this.prisma.passwordResetToken.create({
+      data: { userId: user.id, token, expiresAt }
+    });
+
+    try {
+      const commServiceUrl = this.configService.get('COMMUNICATION_SERVICE_URL') || 'http://127.0.0.1:3004';
+      await firstValueFrom(
+        this.httpService.post(`${commServiceUrl}/notifications/internal/send-email`, {
+          to: user.email,
+          subject: 'Password Reset',
+          message: `Your reset token is: ${token}`,
+          tenantId: user.tenantId
+        })
+      );
+    } catch (e) {
+      console.error('Failed to send reset email', e.message);
+    }
+
+    return { message: 'If email exists, a reset link was sent.' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const resetRecord = await this.prisma.passwordResetToken.findUnique({ where: { token } });
+    if (!resetRecord || resetRecord.used || resetRecord.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: resetRecord.userId },
+      data: { passwordHash, mustChangePassword: false, failedLoginCount: 0, lockedUntil: null }
+    });
+
+    await this.prisma.passwordResetToken.update({
+      where: { id: resetRecord.id },
+      data: { used: true }
+    });
+
+    return { message: 'Password reset successful' };
+  }
+
+  async createStaff(adminTenantId: string, dto: any, adminId: string) {
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('Email already in use');
+
+    const rawPassword = require('crypto').randomBytes(6).toString('hex');
+    const passwordHash = await bcrypt.hash(rawPassword, 12);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        passwordHash,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        phone: dto.phone,
+        tenantId: adminTenantId,
+        role: 'STAFF',
+        customRoleId: dto.customRoleId || null,
+        mustChangePassword: true,
+        createdBy: adminId,
+        permissions: []
+      }
+    });
+
+    try {
+      const commServiceUrl = this.configService.get('COMMUNICATION_SERVICE_URL') || 'http://127.0.0.1:3004';
+      await firstValueFrom(
+        this.httpService.post(`${commServiceUrl}/notifications/internal/send-email`, {
+          to: user.email,
+          subject: 'Welcome to the Platform',
+          message: `Your temporary password is: ${rawPassword}. Please login and change it.`,
+          tenantId: adminTenantId
+        })
+      );
+    } catch (e) {
+      console.error('Failed to send welcome email', e.message);
+    }
+
+    return this.sanitizeUser(user);
+  }
+
+  async impersonate(superAdminId: string, targetTenantId: string) {
+    const superAdmin = await this.prisma.user.findUnique({ where: { id: superAdminId } });
+    if (!superAdmin || superAdmin.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only super admins can impersonate');
+    }
+
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+
+    await this.prisma.impersonationSession.create({
+      data: { superAdminId, targetTenantId, token, expiresAt }
+    });
+
+    const payload = {
+      sub: superAdmin.id,
+      email: superAdmin.email,
+      role: superAdmin.role,
+      tenantId: superAdmin.tenantId,
+      customRoleId: superAdmin.customRoleId || null,
+      permissions: superAdmin.permissions,
+      impersonationToken: token
+    };
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: '30m',
+    });
+
+    return { accessToken, impersonationToken: token };
+  }
+
+  async exitImpersonation(token: string) {
+    await this.prisma.impersonationSession.deleteMany({ where: { token } });
+    return { message: 'Impersonation ended' };
   }
 
   // ─── Private Helpers ─────────────────────────────────────────

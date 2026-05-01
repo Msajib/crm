@@ -7,6 +7,8 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Param,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -81,5 +83,50 @@ export class AuthController {
   @ApiOperation({ summary: 'Change user password' })
   async changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(req.user.userId, dto);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset' })
+  async forgotPassword(@Body() body: { email: string }) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password' })
+  async resetPassword(@Body() body: { token: string; newPassword: string }) {
+    return this.authService.resetPassword(body.token, body.newPassword);
+  }
+
+  @Post('create-staff')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create staff (Admin only)' })
+  async createStaff(@Request() req: any, @Body() dto: any) {
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only admins can create staff');
+    }
+    return this.authService.createStaff(req.user.tenantId, dto, req.user.userId);
+  }
+
+  @Post('impersonate/:tenantId')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Impersonate tenant (Super Admin only)' })
+  async impersonate(@Request() req: any, @Param('tenantId') tenantId: string) {
+    if (req.user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only super admins can impersonate');
+    }
+    return this.authService.impersonate(req.user.userId, tenantId);
+  }
+
+  @Post('impersonation-exit')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exit impersonation' })
+  async exitImpersonation(@Body() body: { token: string }) {
+    return this.authService.exitImpersonation(body.token);
   }
 }

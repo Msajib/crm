@@ -127,9 +127,15 @@ export class UsersController {
     return this.usersService.getAllAdmins();
   }
 
+  @Post('internal/notify-user')
+  @ApiOperation({ summary: 'Internal: Notify a specific user' })
+  async notifyUser(@Body() body: { userId: string; tenantId: string; title: string; message: string; type: string; link?: string }) {
+    return this.usersService.createNotification(body.userId, body.tenantId, body.title, body.message, body.type, body.link);
+  }
+
   @Post('internal/notify-super-admin')
   @ApiOperation({ summary: 'Internal: Notify all Super Admins' })
-  async internalNotify(@Body() body: { title: string; message: string; type: string }) {
+  async internalNotify(@Body() body: { title: string; message: string; type: string; link?: string }) {
     if (!body.title || !body.message) {
       return { success: false, error: 'Missing title or message' };
     }

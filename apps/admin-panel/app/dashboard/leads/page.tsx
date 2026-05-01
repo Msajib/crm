@@ -17,12 +17,15 @@ import {
   Loader2,
   X,
   Plus,
-  Briefcase
+  Briefcase,
+  MessageSquare,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 import ModuleGuard from '@/components/ModuleGuard';
 import ImportModal from '@/components/ImportModal';
+import { useFeatureGates } from '@/hooks/useFeatureGates';
 
 export default function LeadsPage() {
   return (
@@ -45,6 +48,7 @@ function LeadsContent() {
     value: 0
   });
   const [showImportModal, setShowImportModal] = useState(false);
+  const { gates } = useFeatureGates();
 
   useEffect(() => {
     fetchLeads();
@@ -212,6 +216,15 @@ function LeadsContent() {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end space-x-3">
+                      {gates.whatsapp && (
+                        <button className="p-2 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all"><MessageSquare className="w-4 h-4" /></button>
+                      )}
+                      {gates.call && (
+                        <button className="p-2 bg-blue-500/10 text-blue-600 rounded-xl hover:bg-blue-500 hover:text-white transition-all"><Phone className="w-4 h-4" /></button>
+                      )}
+                      {gates.sms && (
+                        <button className="p-2 bg-indigo-500/10 text-indigo-600 rounded-xl hover:bg-indigo-500 hover:text-white transition-all"><MessageCircle className="w-4 h-4" /></button>
+                      )}
                       <button 
                         onClick={() => { setSelectedLead(lead); setShowConvertModal(true); }}
                         className="bg-emerald-500/10 text-emerald-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center"

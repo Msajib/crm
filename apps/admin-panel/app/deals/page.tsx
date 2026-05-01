@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
 import { 
@@ -38,12 +39,16 @@ import { api } from '@/lib/api';
 export default function DealsPage() {
   return (
     <ModuleGuard moduleId="deals">
-      <DealsContent />
+      <Suspense fallback={<div>Loading deals...</div>}>
+        <DealsContent />
+      </Suspense>
     </ModuleGuard>
   );
 }
 
 function DealsContent() {
+  const searchParams = useSearchParams();
+  const dealIdFromQuery = searchParams.get('id');
   const [deals, setDeals] = useState<any[]>([]);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,11 +77,11 @@ function DealsContent() {
       setLoading(true);
       const [dealsRes, staffRes] = await Promise.all([
         api.get('/deals'),
-        api.get('/users/internal/all-admins').catch(() => []) // Fallback to all admins if staff endpoint fails
+        api.get('/users/staff').catch(() => ({ data: [] })) 
       ]);
       
       setDeals(dealsRes.data || []);
-      setStaffList(Array.isArray(staffRes) ? staffRes : []);
+      setStaffList(staffRes.data || []);
     } catch (err) {
       toast.error('Failed to load deal data');
     } finally {
@@ -89,7 +94,8 @@ function DealsContent() {
       const data = await api.get('/pipelines');
       setPipelines(data || []);
       if (data.length > 0 && !activePipelineId) {
-        setActivePipelineId(data[0].id);
+        const defaultP = data.find((p: any) => p.isDefault) || data[0];
+        setActivePipelineId(defaultP.id);
       }
     } catch (err) {
       console.error('Failed to load pipelines');
@@ -115,6 +121,14 @@ function DealsContent() {
     fetchPipelines();
     fetchRecentActivities();
   }, []);
+
+  // Handle opening deal from query param
+  useEffect(() => {
+    if (dealIdFromQuery && deals.length > 0) {
+      const deal = deals.find(d => d.id === dealIdFromQuery);
+      if (deal) setSelectedDeal(deal);
+    }
+  }, [dealIdFromQuery, deals]);
 
   const activePipeline = useMemo(() => 
     pipelines.find(p => p.id === activePipelineId) || pipelines[0]
@@ -168,8 +182,32 @@ function DealsContent() {
       await api.delete(`/deals/${id}`);
       toast.success('Deal removed');
       fetchDeals();
+      if (selectedDeal?.id === id) setSelectedDeal(null);
     } catch (err) {
       toast.error('Delete failed');
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDeal) return;
+    try {
+      const payload = {
+        title: editDeal.title,
+        value: Number(editDeal.value) || 0,
+        stageId: editDeal.stageId,
+        description: editDeal.description,
+        assignedTo: editDeal.assignedTo,
+        status: editDeal.status,
+      };
+
+      await api.put(`/deals/${editDeal.id}`, payload);
+      toast.success('Opportunity updated');
+      setShowEditModal(false);
+      fetchDeals();
+      setSelectedDeal(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Update failed');
     }
   };
 
@@ -202,12 +240,25 @@ function DealsContent() {
                   onChange={(e) => setActivePipelineId(e.target.value)}
                   className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer"
                 >
-                   {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                   {pipelines.length > 0 ? (
+                     pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
+                   ) : (
+                     <option value="">No Pipeline Found</option>
+                   )}
                 </select>
              </div>
              <div className="w-px h-8 bg-border" />
              <button 
-               onClick={() => setShowAddModal(true)}
+               onClick={() => {
+                 if (pipelines.length === 0) {
+                    toast.error('No pipelines detected. Please create one in System Settings first.', {
+                      icon: '⚠️',
+                      duration: 4000
+                    });
+                    return;
+                 }
+                 setShowAddModal(true);
+               }}
                className="bg-primary text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20"
              >
                 <Plus className="w-4 h-4" />
@@ -215,6 +266,23 @@ function DealsContent() {
              </button>
           </div>
         </header>
+
+        {pipelines.length === 0 && !loading && (
+          <div className="bg-amber-500/10 border border-amber-500/20 p-8 rounded-[32px] flex items-center justify-between animate-pulse">
+             <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-600">
+                   <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                   <h3 className="text-sm font-black text-amber-900 uppercase tracking-widest">Pipeline Required</h3>
+                   <p className="text-xs text-amber-700 font-medium">You cannot create or manage deals without an active pipeline. Configure your sales stages in settings.</p>
+                </div>
+             </div>
+             <Link href="/dashboard/settings/pipelines" className="px-6 py-3 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20">
+                Go to Pipeline Settings
+             </Link>
+          </div>
+        )}
 
         {/* Stats Summary Bar */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -231,7 +299,7 @@ function DealsContent() {
               <div className="flex gap-6 overflow-x-auto pb-10 custom-scrollbar snap-x snap-mandatory">
                 {(activePipeline?.stages || []).map((stage: any) => (
                   <div key={stage.id} className="w-[350px] shrink-0 snap-start flex flex-col gap-6">
-                    <div className="flex items-center justify-between px-2">
+                    <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-md border-b border-border/50 rounded-t-[32px]">
                        <div className="flex items-center gap-3">
                           <div className="w-2.5 h-2.5 rounded-full shadow-lg" style={{ backgroundColor: stage.color, boxShadow: `0 0 10px ${stage.color}40` }} />
                           <h3 className="text-[11px] font-black text-foreground uppercase tracking-widest">{stage.name}</h3>
@@ -244,7 +312,7 @@ function DealsContent() {
                        </div>
                     </div>
 
-                    <div className="flex flex-col gap-4 min-h-[600px] p-2 rounded-[32px] bg-muted/10 border border-border/30">
+                    <div className="flex flex-col gap-4 min-h-[600px] p-2 rounded-b-[32px] bg-muted/10 border border-t-0 border-border/30 overflow-y-auto max-h-[calc(100vh-350px)] scrollbar-hide">
                        {(dealsByStage[stage.id] || []).map((deal: any) => (
                          <div 
                            key={deal.id} 
@@ -412,7 +480,7 @@ function DealsContent() {
 
             <div className="space-y-2">
                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Description</label>
-               <RichTextEditor content={newDeal.description} onChange={html => setNewDeal({...newDeal, description: html})} />
+               <RichTextEditor value={newDeal.description} onChange={(html: string) => setNewDeal({...newDeal, description: html})} />
             </div>
 
             <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/20 hover:opacity-90 transition-all">
@@ -452,17 +520,17 @@ function DealsContent() {
                      </div>
                   </header>
 
-                  <section className="space-y-6">
-                     <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                        <User className="w-4 h-4" /> Stakeholder Information
+                  <section className="space-y-4">
+                     <h4 className="text-[9px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                        <User className="w-3.5 h-3.5" /> Stakeholder
                      </h4>
-                     <div className="p-6 rounded-[32px] bg-muted/30 border border-border/50 flex items-center gap-6">
-                        <div className="w-16 h-16 rounded-2xl bg-background border border-border flex items-center justify-center text-2xl font-black text-primary shadow-sm">
+                     <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-background border border-border flex items-center justify-center text-lg font-black text-primary shadow-sm">
                            {selectedDeal.contact?.firstName?.[0] || 'L'}
                         </div>
                         <div>
-                           <p className="text-lg font-black text-foreground">{selectedDeal.contact ? `${selectedDeal.contact.firstName} ${selectedDeal.contact.lastName}` : 'Unlinked Contact'}</p>
-                           <p className="text-xs text-muted-foreground font-medium">{selectedDeal.contact?.email || 'No email provided'}</p>
+                           <p className="text-sm font-black text-foreground">{selectedDeal.contact ? `${selectedDeal.contact.firstName} ${selectedDeal.contact.lastName}` : 'Unlinked Contact'}</p>
+                           <p className="text-[10px] text-muted-foreground font-medium">{selectedDeal.contact?.email || 'No email provided'}</p>
                         </div>
                      </div>
                   </section>
@@ -477,9 +545,23 @@ function DealsContent() {
                         <ActivityIcon className="w-4 h-4" /> Deal Timeline
                      </h4>
                      <div className="space-y-8 pl-4 border-l-2 border-border/50 ml-2">
-                        <TimelineItem title="Deal Created" desc="Initial opportunity identified and logged." time="2 days ago" icon={CheckCircle2} active />
-                        <TimelineItem title="Stage Moved" desc="Advanced to 'Qualification' after initial call." time="1 day ago" icon={ArrowRight} active />
-                        <TimelineItem title="Proposal Sent" desc="System automatically delivered PDF proposal." time="4 hours ago" icon={FileText} />
+                        <TimelineItem 
+                          title="Deal Created" 
+                          desc="Initial opportunity identified and logged." 
+                          time={new Date(selectedDeal.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} 
+                          icon={CheckCircle2} 
+                          active 
+                        />
+                        <TimelineItem 
+                          title="Last Activity" 
+                          desc="System synchronization and update." 
+                          time={new Date(selectedDeal.updatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} 
+                          icon={ArrowRight} 
+                          active 
+                        />
+                        {selectedDeal.status === 'WON' && (
+                          <TimelineItem title="Deal Won" desc="Transaction successfully completed." time={selectedDeal.wonAt ? new Date(selectedDeal.wonAt).toLocaleDateString() : 'Just now'} icon={Target} active />
+                        )}
                      </div>
                   </section>
                </div>
@@ -492,7 +574,86 @@ function DealsContent() {
                </div>
             </div>
          </div>
-      )}
+       )}
+       {/* Edit Deal Modal */}
+      <PremiumModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Update Opportunity"
+        subtitle="Refine deal details and progress through stages"
+      >
+         {editDeal && (
+           <form onSubmit={handleUpdate} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Opportunity Title</label>
+                    <input required value={editDeal.title} onChange={e => setEditDeal({...editDeal, title: e.target.value})} className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-4 text-sm font-bold" />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Value</label>
+                    <div className="relative">
+                       <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                       <input required type="number" value={editDeal.value || ''} onChange={e => setEditDeal({...editDeal, value: Number(e.target.value)})} className="w-full bg-muted/50 border border-border rounded-2xl pl-12 pr-6 py-4 text-sm font-bold" />
+                    </div>
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Current Stage</label>
+                    <select 
+                      required 
+                      value={editDeal.stageId} 
+                      onChange={e => setEditDeal({...editDeal, stageId: e.target.value})}
+                      className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-4 text-sm font-bold appearance-none cursor-pointer"
+                    >
+                       {activePipeline?.stages?.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Assigned To</label>
+                    <select 
+                      value={editDeal.assignedTo} 
+                      onChange={e => setEditDeal({...editDeal, assignedTo: e.target.value})}
+                      className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-4 text-sm font-bold appearance-none cursor-pointer"
+                    >
+                       <option value="">Select Staff</option>
+                       {staffList.map((s: any) => <option key={s.id} value={s.id}>{s.firstName} {s.lastName}</option>)}
+                    </select>
+                 </div>
+              </div>
+
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Status</label>
+                 <div className="flex gap-4">
+                    {['OPEN', 'WON', 'LOST'].map(status => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => setEditDeal({...editDeal, status})}
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-black border transition-all ${
+                          editDeal.status === status 
+                          ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' 
+                          : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                 </div>
+              </div>
+
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Context & Strategic Value</label>
+                     <RichTextEditor value={editDeal.description || ''} onChange={html => setEditDeal({...editDeal, description: html})} mentions={staffList} />
+                  </div>
+
+              <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/20 hover:opacity-90 transition-all">
+                 Save Changes
+              </button>
+           </form>
+         )}
+      </PremiumModal>
     </DashboardLayout>
   );
 }

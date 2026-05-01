@@ -293,17 +293,17 @@ export default function UserManagementPage() {
 
   const togglePermission = (permId: string, isEditing = false) => {
     if (isEditing) {
-      setEditingRole(prev => ({
+      setEditingRole((prev: any) => ({
         ...prev,
         permissions: prev.permissions.includes(permId)
           ? prev.permissions.filter((p: string) => p !== permId)
           : [...prev.permissions, permId]
       }));
     } else {
-      setNewRole(prev => ({
+      setNewRole((prev: any) => ({
         ...prev,
         permissions: prev.permissions.includes(permId)
-          ? prev.permissions.filter(p => p !== permId)
+          ? prev.permissions.filter((p: string) => p !== permId)
           : [...prev.permissions, permId]
       }));
     }

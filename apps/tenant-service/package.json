@@ -53,5 +53,8 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "npx tsc prisma/seed.ts && node prisma/seed.js"
   }
 }

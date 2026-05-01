@@ -77,8 +77,8 @@ async function request(endpoint: string, options: RequestInit = {}) {
   try {
     return JSON.parse(text);
   } catch (err) {
-    console.error('Failed to parse JSON response:', text);
-    return text; // Return as text if not valid JSON
+    // If it's not valid JSON, just return the text
+    return text;
   }
 }
 

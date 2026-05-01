@@ -95,6 +95,16 @@ const STAT_OPTIONS = [
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SuperAdminSettings() {
+  return (
+    <DashboardLayout>
+      <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>}>
+        <SettingsContent />
+      </React.Suspense>
+    </DashboardLayout>
+  );
+}
+
+function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { role } = useAuth();
@@ -105,7 +115,15 @@ export default function SuperAdminSettings() {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [activeTab, setActiveTab] = useState<'profile' | 'branding' | 'pricing' | 'templates' | 'pipelines' | 'modules' | 'stats' | 'subscription'>((tabParam as any) || 'branding');
+  const [activeTab, setActiveTab] = useState<'profile' | 'branding' | 'pricing' | 'templates' | 'pipelines' | 'modules' | 'stats' | 'subscription' | 'domain'>((tabParam as any) || 'branding');
+
+  // Domain State
+  const [domainSettings, setDomainSettings] = useState({
+    subdomain: '',
+    customDomain: '',
+    domainStatus: 'PENDING',
+    domainVerified: false,
+  });
   
   // Settings State
   const [settings, setSettings] = useState({
@@ -262,6 +280,12 @@ export default function SuperAdminSettings() {
         setWorkspaceBranding({
           name: data.name || '', logoUrl: data.logoUrl || '', faviconUrl: data.faviconUrl || '',
           primaryColor: data.primaryColor || '#6366f1', secondaryColor: data.secondaryColor || '#4f46e5', accentColor: data.accentColor || '#f59e0b',
+        });
+        setDomainSettings({
+          subdomain: data.subdomain || '',
+          customDomain: data.customDomain || '',
+          domainStatus: data.domainStatus || 'PENDING',
+          domainVerified: data.domainVerified || false,
         });
       }
     } catch (e) {}
@@ -447,6 +471,54 @@ export default function SuperAdminSettings() {
     window.dispatchEvent(new Event('dashboard-prefs-updated'));
   };
 
+  // --- Domain Handlers ---
+  const handleProvisionSubdomain = async () => {
+    if (!domainSettings.subdomain) return toast.error('Please enter a subdomain prefix');
+    setLoading(true);
+    try {
+      const res = await api.post(`/tenants/${tenant.id}/provision-subdomain`, { baseName: domainSettings.subdomain });
+      setDomainSettings(prev => ({ ...prev, subdomain: res.subdomain }));
+      toast.success('Subdomain provisioned successfully');
+      fetchTenantData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to provision subdomain');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveCustomDomain = async () => {
+    if (!domainSettings.customDomain) return toast.error('Please enter a custom domain');
+    setLoading(true);
+    try {
+      await api.patch(`/tenants/${tenant.id}/branding`, { customDomain: domainSettings.customDomain });
+      toast.success('Custom domain saved. Please verify DNS to activate.');
+      fetchTenantData();
+    } catch (err: any) {
+      toast.error('Failed to save domain');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCustomDomain = async () => {
+    if (!domainSettings.customDomain) return toast.error('Please enter a custom domain');
+    setLoading(true);
+    try {
+      const res = await api.post(`/tenants/${tenant.id}/verify-custom-domain`, { customDomain: domainSettings.customDomain });
+      if (res.domainVerified) {
+        toast.success('Custom domain verified successfully!');
+      } else {
+        toast.error('Verification failed. Please check your DNS settings.');
+      }
+      fetchTenantData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'branding', label: 'Identity', icon: Palette },
@@ -457,13 +529,13 @@ export default function SuperAdminSettings() {
       { id: 'pipelines', label: 'Pipelines', icon: GitBranch },
     ] : [
       { id: 'subscription', label: 'Payment', icon: CreditCard },
+      { id: 'domain', label: 'Domain', icon: Globe },
     ]),
     { id: 'stats', label: 'Dashboard', icon: LayoutGrid },
   ] as const;
 
   return (
-    <DashboardLayout>
-      <div className="animate-fade-in max-w-6xl mx-auto space-y-10 pb-20">
+    <div className="animate-fade-in max-w-6xl mx-auto space-y-10 pb-20">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <h1 className="text-4xl font-black text-foreground tracking-tight">System Control</h1>
@@ -654,7 +726,7 @@ export default function SuperAdminSettings() {
                            </div>
                         </div>
                         <div className="flex-1">
-                           <RichTextEditor value={plan.description || ''} onChange={html => updatePlan(plan.id, 'description', html)} />
+                           <RichTextEditor value={plan.description || ''} onChange={(html: string) => updatePlan(plan.id, 'description', html)} />
                         </div>
                      </div>
                    ))}
@@ -805,6 +877,91 @@ export default function SuperAdminSettings() {
              </div>
            )}
 
+           {activeTab === 'domain' && (
+             <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
+                <section className="space-y-6">
+                   <h3 className="text-2xl font-black text-foreground flex items-center gap-4">
+                      <span className="w-1.5 h-8 bg-primary rounded-full shadow-lg shadow-primary/20" />
+                      Domain Configuration
+                   </h3>
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                      
+                      {/* Subdomain Settings */}
+                      <div className="space-y-6 p-8 bg-muted/30 rounded-[40px] border border-border/50">
+                         <div className="flex items-center gap-3 mb-2">
+                            <Globe className="w-6 h-6 text-primary" />
+                            <h4 className="text-lg font-black uppercase tracking-widest text-foreground">Subdomain</h4>
+                         </div>
+                         <p className="text-xs text-muted-foreground font-medium mb-4">
+                           Get a free `.crm.com` subdomain for your workspace.
+                         </p>
+                         <div className="flex items-center">
+                            <input 
+                              type="text" 
+                              value={domainSettings.subdomain || ''} 
+                              onChange={e => setDomainSettings({...domainSettings, subdomain: e.target.value})} 
+                              placeholder="your-brand" 
+                              className="flex-1 bg-background border border-r-0 border-border rounded-l-2xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary" 
+                            />
+                            <div className="bg-muted border border-l-0 border-border rounded-r-2xl px-4 py-3 text-sm font-bold text-muted-foreground">
+                              .crm.com
+                            </div>
+                         </div>
+                         <button 
+                           onClick={handleProvisionSubdomain} 
+                           disabled={loading || !tenant || tenant.id === 'system'} 
+                           className="w-full py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:opacity-90 transition-all mt-4 disabled:opacity-50">
+                           Provision Subdomain
+                         </button>
+                      </div>
+
+                      {/* Custom Domain Settings */}
+                      <div className="space-y-6 p-8 bg-muted/30 rounded-[40px] border border-border/50">
+                         <div className="flex items-center gap-3 mb-2">
+                            <LinkIcon className="w-6 h-6 text-primary" />
+                            <h4 className="text-lg font-black uppercase tracking-widest text-foreground">Custom Domain</h4>
+                         </div>
+                         <p className="text-xs text-muted-foreground font-medium mb-4">
+                           Connect your own domain. Add a CNAME record pointing to <span className="font-bold text-foreground px-2 py-1 bg-muted rounded">{domainSettings.subdomain ? `${domainSettings.subdomain}.crm.com` : 'your-subdomain.crm.com'}</span>.
+                         </p>
+                         <div className="space-y-2">
+                            <input 
+                              type="text" 
+                              value={domainSettings.customDomain || ''} 
+                              onChange={e => setDomainSettings({...domainSettings, customDomain: e.target.value})} 
+                              placeholder="crm.yourcompany.com" 
+                              className="w-full bg-background border border-border rounded-2xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary" 
+                            />
+                         </div>
+                         <div className="flex items-center justify-between mt-4">
+                            <div className="flex items-center gap-2">
+                              Status: 
+                              <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest ${domainSettings.domainVerified ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                                {domainSettings.domainVerified ? 'VERIFIED' : domainSettings.domainStatus}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={handleSaveCustomDomain} 
+                                disabled={loading || !tenant || tenant.id === 'system'} 
+                                className="px-4 py-3 bg-muted text-foreground border border-border rounded-xl font-black text-xs uppercase tracking-widest hover:bg-background transition-all disabled:opacity-50">
+                                Save
+                              </button>
+                              <button 
+                                onClick={handleVerifyCustomDomain} 
+                                disabled={loading || !tenant || tenant.id === 'system'} 
+                                className="px-6 py-3 bg-foreground text-background rounded-xl font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-50">
+                                Verify DNS
+                              </button>
+                            </div>
+                         </div>
+                      </div>
+
+                   </div>
+                </section>
+             </div>
+           )}
+
            {activeTab === 'stats' && (
              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
                 <div className="flex justify-between items-center">
@@ -831,7 +988,7 @@ export default function SuperAdminSettings() {
              </div>
            )}
         </main>
-      </div>
+      {/* Modals moved inside the main div */}
 
       <PremiumModal isOpen={showTemplateModal} onClose={() => { setShowTemplateModal(false); setEditingTemplate(null); }} title={editingTemplate ? "Edit Template" : "Template Designer"}>
          <div className="space-y-6">
@@ -845,7 +1002,7 @@ export default function SuperAdminSettings() {
             </div>
             <div className="space-y-2">
                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Content</label>
-               <RichTextEditor value={newTemplate.content || ''} onChange={html => setNewTemplate({...newTemplate, content: html})} />
+               <RichTextEditor value={newTemplate.content || ''} onChange={(html: string) => setNewTemplate({...newTemplate, content: html})} />
             </div>
             <button onClick={handleCreateTemplate} className="w-full py-4 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest">
                {editingTemplate ? "UPDATE TEMPLATE" : "SAVE TEMPLATE"}
@@ -924,7 +1081,7 @@ export default function SuperAdminSettings() {
             </button>
          </div>
       </PremiumModal>
-    </DashboardLayout>
+    </div>
   );
 }
 

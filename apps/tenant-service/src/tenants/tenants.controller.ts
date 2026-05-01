@@ -117,6 +117,18 @@ export class TenantsController {
     return this.tenantsService.getPlans();
   }
 
+  @Get('by-slug/:slug')
+  @ApiOperation({ summary: 'Get tenant by slug or subdomain' })
+  async findBySlug(@Param('slug') slug: string) {
+    return this.tenantsService.findBySlug(slug);
+  }
+
+  @Get('by-domain/:domain')
+  @ApiOperation({ summary: 'Get tenant by custom domain' })
+  async findByDomain(@Param('domain') domain: string) {
+    return this.tenantsService.findByDomain(domain);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get tenant details' })
   async findOne(@Param('id') id: string) {
@@ -149,6 +161,18 @@ export class TenantsController {
     @Body() dto: ConnectSocialAccountDto,
   ) {
     return this.tenantsService.connectSocial(tenantId, dto);
+  }
+
+  @Post(':id/provision-subdomain')
+  @ApiOperation({ summary: 'Provision a subdomain' })
+  async provisionSubdomain(@Param('id') id: string, @Body('baseName') baseName: string) {
+    return this.tenantsService.provisionSubdomainForTenant(id, baseName);
+  }
+
+  @Post(':id/verify-custom-domain')
+  @ApiOperation({ summary: 'Verify a custom domain' })
+  async verifyCustomDomain(@Param('id') id: string, @Body('customDomain') customDomain: string) {
+    return this.tenantsService.verifyCustomDomain(id, customDomain);
   }
 
   @Patch(':id/branding')

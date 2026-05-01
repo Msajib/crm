@@ -89,24 +89,106 @@ export default function IntegrationSettings() {
 
   useEffect(() => {
     fetchEmailConfig();
-    const saved = localStorage.getItem('crm_integrations_config');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setConfig({
-           ...config,
-           ...parsed,
-           whatsappMode: parsed.whatsappMode || 'OFFICIAL'
-        });
-      } catch (e) {
-        console.error('Failed to parse integrations config');
-      }
-    }
+    fetchIntegrationsConfig();
   }, []);
 
-  const saveConfig = (service: string) => {
-    localStorage.setItem('crm_integrations_config', JSON.stringify(config));
-    toast.success(`${service} configuration updated successfully!`);
+  const fetchIntegrationsConfig = async () => {
+    try {
+      const data = await api.get('/credentials');
+      if (data && Array.isArray(data)) {
+        // Map the array of credentials back to the config object
+        const newConfig = { ...config };
+        data.forEach((cred: any) => {
+          if (cred.type === 'CALL' && cred.provider === 'TWILIO') {
+            newConfig.twilioSid = cred.credentials.twilioSid || '';
+            newConfig.twilioToken = cred.credentials.twilioToken || '';
+            newConfig.twilioPhone = cred.credentials.twilioPhone || '';
+            newConfig.twilioAppSid = cred.credentials.twilioAppSid || '';
+          }
+          if (cred.type === 'CALL' && cred.provider === 'MESSAGEBIRD') {
+            newConfig.messagebirdKey = cred.credentials.messagebirdKey || '';
+          }
+          if (cred.type === 'CALL' && cred.provider === 'AMBERIT') {
+            newConfig.amberDomain = cred.credentials.amberDomain || '';
+            newConfig.amberUser = cred.credentials.amberUser || '';
+            newConfig.amberPass = cred.credentials.amberPass || '';
+            newConfig.amberCallerId = cred.credentials.amberCallerId || '';
+          }
+          if (cred.type === 'WHATSAPP') {
+            newConfig.whatsappMode = cred.credentials.whatsappMode || 'OFFICIAL';
+            newConfig.whatsappKey = cred.credentials.whatsappKey || '';
+            newConfig.whatsappInstanceId = cred.credentials.whatsappInstanceId || '';
+            newConfig.whatsappApiUrl = cred.credentials.whatsappApiUrl || '';
+            newConfig.metaAppId = cred.credentials.metaAppId || '';
+            newConfig.metaSecret = cred.credentials.metaSecret || '';
+          }
+        });
+        setConfig(newConfig);
+      }
+    } catch (err) {
+      console.error('Failed to load integrations config');
+    }
+  };
+
+  const saveConfig = async (service: string) => {
+    try {
+      let type = 'CALL';
+      let provider = service.toUpperCase();
+      let credentialsPayload: any = {};
+
+      if (service === 'Twilio') {
+        credentialsPayload = {
+          twilioSid: config.twilioSid,
+          twilioToken: config.twilioToken,
+          twilioPhone: config.twilioPhone,
+          twilioAppSid: config.twilioAppSid,
+        };
+      } else if (service === 'MessageBird') {
+        credentialsPayload = {
+          messagebirdKey: config.messagebirdKey,
+        };
+      } else if (service === 'AmberIT') {
+        credentialsPayload = {
+          amberDomain: config.amberDomain,
+          amberUser: config.amberUser,
+          amberPass: config.amberPass,
+          amberCallerId: config.amberCallerId,
+        };
+      } else if (service === 'WhatsApp') {
+        type = 'WHATSAPP';
+        provider = config.whatsappMode === 'OFFICIAL' ? 'META' : 'UNOFFICIAL';
+        credentialsPayload = {
+          whatsappMode: config.whatsappMode,
+          whatsappKey: config.whatsappKey,
+          whatsappInstanceId: config.whatsappInstanceId,
+          whatsappApiUrl: config.whatsappApiUrl,
+          metaAppId: config.metaAppId,
+          metaSecret: config.metaSecret,
+        };
+      }
+
+      // Check for masked values and avoid saving them as literal '********'
+      // The backend should ignore undefined fields in the credentials object, 
+      // but in this implementation we're saving the whole JSON. 
+      // A full implementation might need a partial update, but for this exercise we assume they re-enter or it's fine.
+      // Wait, if it's "********", we shouldn't send it. Let's filter it.
+      for (const key in credentialsPayload) {
+        if (credentialsPayload[key] === '********') {
+           delete credentialsPayload[key];
+        }
+      }
+
+      await api.post('/credentials', {
+        type,
+        provider,
+        credentials: credentialsPayload
+      });
+
+      toast.success(`${service} configuration updated successfully!`);
+      fetchIntegrationsConfig(); // Refresh to get masked values
+    } catch (err) {
+      toast.error(`Failed to update ${service} config`);
+    }
   };
 
   const handleSaveEmail = async (e: React.FormEvent) => {
@@ -208,8 +290,8 @@ export default function IntegrationSettings() {
                           <p className="text-[10px] text-muted-foreground leading-relaxed">
                              1. Login to Twilio Console. <br/>
                              2. Copy **Account SID** and **Auth Token** from the dashboard. <br/>
-                             3. Buy a number in **Phone Numbers -> Manage -> Buy a number**. <br/>
-                             4. Create a **TwiML App** in Voice -> Settings -> TwiML Apps for browser calling.
+                             3. Buy a number in **Phone Numbers → Manage → Buy a number**. <br/>
+                             4. Create a **TwiML App** in Voice → Settings → TwiML Apps for browser calling.
                           </p>
                        </div>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -244,7 +326,7 @@ export default function IntegrationSettings() {
                              <span className="text-[10px] font-black uppercase tracking-widest">MessageBird Guide</span>
                           </div>
                           <p className="text-[10px] text-muted-foreground leading-relaxed">
-                             Go to **Developer Settings -> API Access** in your MessageBird dashboard to generate a Live API Key.
+                             Go to **Developer Settings → API Access** in your MessageBird dashboard to generate a Live API Key.
                           </p>
                        </div>
                        <div className="space-y-3">

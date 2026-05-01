@@ -32,6 +32,7 @@ const SERVICE_ROUTES: Record<string, string> = {
   'email-config': process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004',
   import: process.env.IMPORT_SERVICE_URL || 'http://localhost:3009',
   webhooks: process.env.CRM_SERVICE_URL || 'http://localhost:3003',
+  credentials: process.env.CREDENTIAL_SERVICE_URL || 'http://localhost:3010',
 };
 
 @ApiTags('gateway')
@@ -116,6 +117,7 @@ export class GatewayController {
       'billing': '',
       'payments': '',
       'roles': '',
+      'credentials': '/credentials',
     };
 
     const prefix = servicePrefixes[service] || `/${service}`;

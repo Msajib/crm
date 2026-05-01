@@ -124,6 +124,18 @@ export class CrmService {
   // ═══════════════ PIPELINES ══════════════════════════════════
 
   async createPipeline(tenantId: string, dto: CreatePipelineDto) {
+    // If setting as default, unset others
+    if (dto.isDefault) {
+      await this.prisma.pipeline.updateMany({
+        where: { tenantId },
+        data: { isDefault: false },
+      });
+    } else {
+      // If no pipeline exists, make this one the default
+      const count = await this.prisma.pipeline.count({ where: { tenantId } });
+      if (count === 0) dto.isDefault = true;
+    }
+
     const pipeline = await this.prisma.pipeline.create({
       data: {
         tenantId,
@@ -165,20 +177,25 @@ export class CrmService {
   }
 
   async updatePipeline(id: string, tenantId: string, dto: any) {
+    // If setting as default, unset others
+    if (dto.isDefault) {
+      await this.prisma.pipeline.updateMany({
+        where: { tenantId, NOT: { id } },
+        data: { isDefault: false },
+      });
+    }
+
     // Basic update for pipeline name/default
     await this.prisma.pipeline.update({
       where: { id, tenantId },
       data: {
-        name: dto.name,
-        isDefault: dto.isDefault,
+        ...(dto.name && { name: dto.name }),
+        ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
       },
     });
 
-    // If stages are provided, we do a simple sync (delete old, create new for simplicity in this version)
-    // In a production app, you'd want to handle ID matching to avoid breaking deal relations
+    // If stages are provided, we do a simple sync
     if (dto.stages && dto.stages.length > 0) {
-      // Check if any deals are using stages we are about to delete
-      // For now, let's just update names/colors if they have IDs, or create new ones
       for (const s of dto.stages) {
         if (s.id) {
           await this.prisma.pipelineStage.update({
@@ -225,7 +242,13 @@ export class CrmService {
   // ═══════════════ DEALS ══════════════════════════════════════
 
   async createDeal(tenantId: string, userId: string, dto: CreateDealDto) {
-    return this.prisma.deal.create({
+    // Ensure pipeline exists
+    const pipelineCount = await this.prisma.pipeline.count({ where: { tenantId } });
+    if (pipelineCount === 0) {
+      throw new Error('No pipelines found. Please create a pipeline in System Settings first.');
+    }
+
+    const deal = await this.prisma.deal.create({
       data: {
         tenantId,
         title: dto.title,
@@ -242,6 +265,12 @@ export class CrmService {
       },
       include: { contact: true, stage: true, pipeline: true },
     });
+
+    if (dto.description) {
+      await this.processMentions(tenantId, dto.description, deal.id, deal.title, 'Deal');
+    }
+
+    return deal;
   }
 
   async listDeals(tenantId: string, pipelineId?: string, stageId?: string, page = 1, limit = 50) {
@@ -285,11 +314,17 @@ export class CrmService {
       if (dto.status === 'LOST') updateData.lostAt = new Date();
     }
 
-    return this.prisma.deal.update({
+    const updated = await this.prisma.deal.update({
       where: { id },
       data: updateData,
       include: { contact: true, stage: true },
     });
+
+    if (dto.description) {
+      await this.processMentions(tenantId, dto.description, updated.id, updated.title, 'Deal');
+    }
+
+    return updated;
   }
 
   async deleteDeal(id: string, tenantId: string) {
@@ -336,7 +371,7 @@ export class CrmService {
   // ═══════════════ TASKS ══════════════════════════════════════
 
   async createTask(tenantId: string, userId: string, dto: CreateTaskDto) {
-    return this.prisma.task.create({
+    const task = await this.prisma.task.create({
       data: {
         tenantId,
         createdBy: userId,
@@ -350,6 +385,12 @@ export class CrmService {
         checklists: dto.checklists || [],
       },
     });
+
+    if (dto.description) {
+      await this.processMentions(tenantId, dto.description, task.id, task.title, 'Task');
+    }
+
+    return task;
   }
 
   async listTasks(tenantId: string, assignedTo?: string, status?: string) {
@@ -373,7 +414,7 @@ export class CrmService {
     const task = await this.prisma.task.findFirst({ where: { id, tenantId } });
     if (!task) throw new NotFoundException('Task not found');
 
-    return this.prisma.task.update({
+    const updated = await this.prisma.task.update({
       where: { id },
       data: {
         ...(dto.title && { title: dto.title }),
@@ -388,6 +429,12 @@ export class CrmService {
         ...(dto.checklists && { checklists: dto.checklists }),
       },
     });
+
+    if (dto.description) {
+      await this.processMentions(tenantId, dto.description, updated.id, updated.title, 'Task');
+    }
+
+    return updated;
   }
 
   async deleteTask(id: string, tenantId: string) {
@@ -561,7 +608,10 @@ export class CrmService {
       this.prisma.deal.findMany({
         where: {
           tenantId,
-          title: { contains: query, mode: 'insensitive' },
+          OR: [
+            { title: { contains: query, mode: 'insensitive' } },
+            { id: { contains: query, mode: 'insensitive' } },
+          ],
         },
         take: 5,
         select: { id: true, title: true },
@@ -569,7 +619,10 @@ export class CrmService {
       this.prisma.task.findMany({
         where: {
           tenantId,
-          title: { contains: query, mode: 'insensitive' },
+          OR: [
+            { title: { contains: query, mode: 'insensitive' } },
+            { id: { contains: query, mode: 'insensitive' } },
+          ],
         },
         take: 5,
         select: { id: true, title: true },
@@ -627,5 +680,46 @@ export class CrmService {
 
     await this.prisma.webhook.delete({ where: { id } });
     return { message: 'Webhook deleted' };
+  }
+
+  // ═══════════════ INTERNAL HELPERS ═══════════════════════════
+
+  private async notifyUser(userId: string, tenantId: string, title: string, message: string, type: string, link?: string) {
+    try {
+      const port = process.env.AUTH_SERVICE_PORT || 3001;
+      await fetch(`http://localhost:${port}/internal/notify-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, tenantId, title, message, type, link }),
+      });
+    } catch (err) {
+      this.logger.error(`Failed to send notification to user ${userId}:`, err);
+    }
+  }
+
+  private async processMentions(tenantId: string, description: string, recordId: string, recordTitle: string, module: 'Deal' | 'Task') {
+    if (!description) return;
+    
+    // Match data-id="uuid" in the HTML produced by RichTextEditor
+    const mentionRegex = /data-id="([^"]+)"/g;
+    const userIds = new Set<string>();
+    let match;
+    
+    while ((match = mentionRegex.exec(description)) !== null) {
+      userIds.add(match[1]);
+    }
+
+    const link = module === 'Deal' ? `/deals?id=${recordId}` : `/tasks?id=${recordId}`;
+    
+    for (const userId of userIds) {
+      await this.notifyUser(
+        userId,
+        tenantId,
+        `Mention in ${module}`,
+        `You were mentioned in ${module}: ${recordTitle}`,
+        'MENTION',
+        link
+      );
+    }
   }
 }

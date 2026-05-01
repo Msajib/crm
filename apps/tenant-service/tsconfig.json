@@ -1,23 +1,25 @@
 {
-    "compilerOptions":  {
-                            "allowSyntheticDefaultImports":  true,
-                            "target":  "es2017",
-                            "baseUrl":  "./",
-                            "noImplicitAny":  false,
-                            "strictNullChecks":  false,
-                            "declaration":  true,
-                            "module":  "commonjs",
-                            "incremental":  true,
-                            "sourceMap":  true,
-                            "forceConsistentCasingInFileNames":  false,
-                            "outDir":  "./dist",
-                            "emitDecoratorMetadata":  true,
-                            "removeComments":  true,
-                            "experimentalDecorators":  true,
-                            "strictBindCallApply":  false,
-                            "noFallbackArgs":  false,
-                            "paths": {
-                                "@prisma/tenant-client": ["../../node_modules/@prisma/tenant-client"]
-                            }
-                        }
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2017",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@prisma/tenant-client": ["../../node_modules/@prisma/tenant-client"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "prisma"]
 }

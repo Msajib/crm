@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
+import PremiumModal from '@/components/PremiumModal';
 
 const CAMPAIGN_TYPES = [
   { id: 'EMAIL', label: 'Email', icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
@@ -38,6 +39,7 @@ export default function CampaignsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedType, setSelectedType] = useState('EMAIL');
+  const [step, setStep] = useState(1);
 
   useEffect(() => {
     fetchData();
@@ -234,102 +236,165 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-      {/* Campaign Editor Modal */}
-      {isEditorOpen && (
-        <div className="fixed inset-0 bg-background/95 backdrop-blur-xl z-[200] flex items-center justify-center p-4">
-           <div className="glass-premium w-full max-w-5xl rounded-[60px] border border-border p-16 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
-              <div className="flex justify-between items-start mb-12">
-                 <div>
-                    <h2 className="text-4xl font-black text-foreground tracking-tight">Initialize Campaign</h2>
-                    <p className="text-sm text-muted-foreground mt-2 font-medium">Select your channel and target audience for automated engagement.</p>
-                 </div>
-                 <button onClick={() => setIsEditorOpen(false)} className="p-5 hover:bg-muted rounded-3xl transition-all text-muted-foreground"><X className="w-7 h-7" /></button>
-              </div>
-              
-              <form onSubmit={handleSave} className="space-y-10 flex-1 overflow-y-auto pr-6 scrollbar-hide">
-                 <div className="grid grid-cols-2 gap-8">
-                    <div className="space-y-3 col-span-2 lg:col-span-1">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Campaign Identity</label>
-                       <input name="name" required className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" placeholder="e.g. Winter Sales Blast" />
-                    </div>
-                    <div className="space-y-3 col-span-2 lg:col-span-1">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Launch Schedule</label>
-                       <input name="scheduledAt" type="datetime-local" className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" />
-                    </div>
-                 </div>
+      {/* Campaign Editor Modal (Wizard) */}
+      <PremiumModal
+        isOpen={isEditorOpen}
+        onClose={() => { setIsEditorOpen(false); setStep(1); }}
+        title="Campaign Engine"
+        subtitle={step === 1 ? "Step 1: Identity & Channel" : step === 2 ? "Step 2: Creative Assets" : "Step 3: Target Audience"}
+        maxWidth="max-w-4xl"
+        footer={(
+          <div className="flex justify-between items-center w-full">
+            <div className="flex gap-2">
+              {[1, 2, 3].map(s => (
+                <div key={s} className={`h-1.5 w-8 rounded-full transition-all ${step >= s ? 'bg-primary' : 'bg-muted'}`} />
+              ))}
+            </div>
+            <div className="flex gap-4">
+              {step > 1 && (
+                <button 
+                  onClick={() => setStep(step - 1)}
+                  className="px-8 py-4 bg-muted text-foreground rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-muted/80 transition-all border border-border"
+                >
+                  Back
+                </button>
+              )}
+              {step < 3 ? (
+                <button 
+                  onClick={() => {
+                    if (step === 1) {
+                      const name = (document.getElementsByName('name')[0] as HTMLInputElement).value;
+                      if (!name) { toast.error('Please enter a campaign name'); return; }
+                    }
+                    setStep(step + 1);
+                  }}
+                  className="px-10 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                >
+                  Continue <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button 
+                  onClick={() => (document.getElementById('campaign-form') as HTMLFormElement)?.requestSubmit()}
+                  className="px-10 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                >
+                  <Zap className="w-4 h-4 fill-current" /> Initialize Engine
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      >
+        <form id="campaign-form" onSubmit={handleSave} className="space-y-10">
+          {step === 1 && (
+            <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
+               <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-3 col-span-2 lg:col-span-1">
+                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Campaign Identity</label>
+                     <input name="name" required className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" placeholder="e.g. Winter Sales Blast" />
+                  </div>
+                  <div className="space-y-3 col-span-2 lg:col-span-1">
+                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Launch Schedule</label>
+                     <input name="scheduledAt" type="datetime-local" className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" />
+                  </div>
+               </div>
 
-                 <div className="space-y-4">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Engagement Channel</label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                       {CAMPAIGN_TYPES.map(type => {
-                         const Icon = type.icon;
-                         const active = selectedType === type.id;
-                         return (
-                           <div 
-                             key={type.id}
-                             onClick={() => setSelectedType(type.id)}
-                             className={`p-8 rounded-[32px] border-2 transition-all cursor-pointer flex flex-col items-center gap-4 group relative overflow-hidden ${
-                               active ? 'border-primary bg-primary/5 shadow-2xl' : 'border-border bg-background hover:border-primary/30'
-                             }`}
-                           >
-                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${active ? type.bg + ' ' + type.color : 'bg-muted text-muted-foreground'} group-hover:scale-110 transition-transform`}>
-                                 <Icon className="w-7 h-7" />
-                              </div>
-                              <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{type.label}</span>
-                              {active && <div className="absolute top-4 right-4 w-2 h-2 bg-primary rounded-full animate-ping" />}
-                           </div>
-                         );
-                       })}
-                    </div>
-                 </div>
-
-                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Creative Template</label>
-                       <div className="relative">
-                          <select name="templateId" required className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner appearance-none">
-                             <option value="">Select an asset...</option>
-                             {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                          </select>
-                          <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none rotate-90" />
-                       </div>
-                    </div>
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Brief Description</label>
-                       <input name="description" className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" placeholder="Campaign objective (internal use)..." />
-                    </div>
-                 </div>
-
-                 <div className="space-y-6">
-                    <div className="flex justify-between items-center ml-2">
-                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Target Audience</label>
-                       <span className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20">{leads.length} Active Records</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[350px] overflow-y-auto p-6 bg-muted/20 rounded-[40px] border border-border scrollbar-hide shadow-inner">
-                       {leads.map(lead => (
-                         <label key={lead.id} className="flex items-center p-6 bg-background border border-border rounded-[32px] cursor-pointer hover:border-primary/50 transition-all group relative overflow-hidden">
-                            <input type="checkbox" name="leadIds" value={lead.id} className="w-6 h-6 rounded-xl border-2 border-border text-primary focus:ring-primary transition-all mr-6 checked:bg-primary" />
-                            <div className="flex-1">
-                               <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{lead.firstName} {lead.lastName}</p>
-                               <p className="text-[10px] text-muted-foreground font-medium mt-1">{lead.email || 'No contact mail'}</p>
+               <div className="space-y-4">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Engagement Channel</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     {CAMPAIGN_TYPES.map(type => {
+                       const Icon = type.icon;
+                       const active = selectedType === type.id;
+                       return (
+                         <div 
+                           key={type.id}
+                           onClick={() => setSelectedType(type.id)}
+                           className={`p-6 rounded-[32px] border-2 transition-all cursor-pointer flex flex-col items-center gap-3 group relative overflow-hidden ${
+                             active ? 'border-primary bg-primary/5 shadow-xl' : 'border-border bg-background hover:border-primary/30'
+                           }`}
+                         >
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${active ? type.bg + ' ' + type.color : 'bg-muted text-muted-foreground'} group-hover:scale-110 transition-transform`}>
+                               <Icon className="w-6 h-6" />
                             </div>
-                            <div className="absolute inset-y-0 right-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                         </label>
-                       ))}
-                    </div>
-                 </div>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{type.label}</span>
+                            {active && <div className="absolute top-3 right-3 w-2 h-2 bg-primary rounded-full" />}
+                         </div>
+                       );
+                     })}
+                  </div>
+               </div>
+            </div>
+          )}
 
-                 <div className="flex space-x-6 pt-10 sticky bottom-0 bg-background/80 backdrop-blur-md pb-4 border-t border-border mt-10">
-                    <button type="button" onClick={() => setIsEditorOpen(false)} className="flex-1 py-6 bg-muted text-foreground rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-muted/80 transition-all border border-border">Discard</button>
-                    <button type="submit" className="flex-[2] py-6 bg-primary text-primary-foreground rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-3">
-                       <Zap className="w-5 h-5 fill-current" />
-                       <span>Confirm & Initiate Engine</span>
-                    </button>
-                 </div>
-              </form>
-           </div>
-        </div>
-      )}
+          {step === 2 && (
+            <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
+               <div className="space-y-3">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Creative Asset / Template</label>
+                  <div className="relative">
+                     <select name="templateId" required className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-6 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner appearance-none">
+                        <option value="">Select an asset for {selectedType} channel...</option>
+                        {templates.filter(t => t.type === selectedType || !t.type).map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                     </select>
+                     <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none rotate-90" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground ml-2 font-bold italic">Assets are filtered based on the selected channel.</p>
+               </div>
+
+               <div className="space-y-3">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Internal Brief</label>
+                  <textarea name="description" rows={4} className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner resize-none" placeholder="What is the strategic objective of this campaign?" />
+               </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+               <div className="flex justify-between items-center px-2">
+                  <div className="flex items-center gap-3">
+                     <Users className="w-5 h-5 text-primary" />
+                     <div>
+                        <h4 className="text-sm font-black text-foreground">Target Audience</h4>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{leads.length} Records Available</p>
+                     </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const checkboxes = document.getElementsByName('leadIds') as NodeListOf<HTMLInputElement>;
+                      const allChecked = Array.from(checkboxes).every(c => c.checked);
+                      checkboxes.forEach(c => c.checked = !allChecked);
+                    }}
+                    className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest"
+                  >
+                    Toggle Select All
+                  </button>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-4 bg-muted/20 rounded-[40px] border border-border scrollbar-hide shadow-inner">
+                  {leads.map(lead => (
+                    <label key={lead.id} className="flex items-center p-5 bg-card border border-border/60 rounded-[24px] cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all group relative overflow-hidden">
+                       <input type="checkbox" name="leadIds" value={lead.id} defaultChecked className="w-5 h-5 rounded-lg border-2 border-border text-primary focus:ring-primary transition-all mr-5" />
+                       <div className="flex-1 min-w-0">
+                          <p className="text-sm font-black text-foreground truncate">{lead.firstName} {lead.lastName}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium truncate">{lead.email || lead.phone || 'No direct contact'}</p>
+                       </div>
+                       {lead.type === 'CUSTOMER' && <span className="absolute top-2 right-4 text-[8px] font-black text-emerald-500 uppercase">Customer</span>}
+                    </label>
+                  ))}
+               </div>
+               
+               <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6 flex items-start gap-4">
+                  <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                  <p className="text-xs text-primary/80 leading-relaxed font-medium">
+                    You are about to launch a <strong>{selectedType}</strong> campaign. Ensure your credentials are valid in settings before proceeding. 
+                    The processing engine will start immediately after confirmation.
+                  </p>
+               </div>
+            </div>
+          )}
+        </form>
+      </PremiumModal>
     </DashboardLayout>
   );
 }

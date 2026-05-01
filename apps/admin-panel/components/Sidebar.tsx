@@ -137,6 +137,7 @@ export default function Sidebar() {
     ...(!isSuperAdmin ? [
       { name: 'System Settings', href: '/dashboard/super-admin/settings?tab=branding', icon: Settings },
       { name: 'Integration Hub', href: '/dashboard/settings/integrations', icon: Webhook },
+      { name: 'Pipelines', href: '/dashboard/settings/pipelines', icon: GitBranch },
     ] : []),
     
     // Super admin only specific setup

@@ -70,6 +70,6 @@
     "testEnvironment": "node"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "npx tsc prisma/seed.ts && node prisma/seed.js"
   }
 }

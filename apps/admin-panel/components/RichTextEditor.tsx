@@ -11,15 +11,20 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
   minHeight?: number;
+  mentions?: any[];
 }
 
 export default function RichTextEditor({
   value,
   onChange,
   placeholder = 'Enter text...',
-  minHeight = 120
+  minHeight = 120,
+  mentions = []
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const [showMentions, setShowMentions] = React.useState(false);
+  const [mentionQuery, setMentionQuery] = React.useState('');
+  const [mentionPos, setMentionPos] = React.useState({ top: 0, left: 0 });
   const isComposing = useRef(false);
 
   // Set initial content once
@@ -43,6 +48,60 @@ export default function RichTextEditor({
 
   const isActive = (command: string) => {
     try { return document.queryCommandState(command); } catch { return false; }
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+    const text = range.startContainer.textContent || '';
+    const offset = range.startOffset;
+    const textBefore = text.slice(0, offset);
+    
+    const match = textBefore.match(/@([a-zA-Z\s]*)$/);
+    if (match) {
+      const rect = range.getBoundingClientRect();
+      setMentionPos({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
+      setMentionQuery(match[1].toLowerCase());
+      setShowMentions(true);
+    } else {
+      setShowMentions(false);
+    }
+  };
+
+  const insertMention = (staff: any) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+    const text = range.startContainer.textContent || '';
+    const offset = range.startOffset;
+    const textBefore = text.slice(0, offset);
+    
+    // Remove the @query part
+    const mentionMatch = textBefore.match(/@([a-zA-Z\s]*)$/);
+    if (mentionMatch) {
+      range.setStart(range.startContainer, offset - mentionMatch[0].length);
+      range.deleteContents();
+      
+      const mentionNode = document.createElement('span');
+      mentionNode.className = 'mention px-1.5 py-0.5 rounded-md bg-primary/20 text-primary font-bold inline-block mx-0.5';
+      mentionNode.setAttribute('data-id', staff.id);
+      mentionNode.setAttribute('contenteditable', 'false');
+      mentionNode.textContent = `@${staff.firstName} ${staff.lastName}`;
+      
+      range.insertNode(mentionNode);
+      range.setStartAfter(mentionNode);
+      range.insertNode(document.createTextNode('\u00A0')); // Add non-breaking space
+      range.collapse(false);
+      
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      setShowMentions(false);
+      if (editorRef.current) onChange(editorRef.current.innerHTML);
+    }
   };
 
   const toolbarItems = [
@@ -85,12 +144,38 @@ export default function RichTextEditor({
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
+        onKeyUp={handleKeyUp}
         onCompositionStart={() => { isComposing.current = true; }}
         onCompositionEnd={() => { isComposing.current = false; handleInput(); }}
         data-placeholder={placeholder}
-        className="rte-content p-4 text-body text-foreground focus:outline-none overflow-y-auto"
+        className="rte-content p-4 text-sm text-foreground focus:outline-none overflow-y-auto"
         style={{ minHeight }}
       />
+
+      {showMentions && mentions.length > 0 && (
+        <div 
+          className="fixed z-[9999] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden w-64 animate-in fade-in zoom-in duration-200"
+          style={{ top: mentionPos.top, left: mentionPos.left }}
+        >
+          {mentions
+            .filter(s => `${s.firstName} ${s.lastName}`.toLowerCase().includes(mentionQuery))
+            .map(staff => (
+              <div 
+                key={staff.id} 
+                onClick={() => insertMention(staff)}
+                className="px-4 py-3 hover:bg-muted cursor-pointer text-sm font-bold transition-colors flex items-center gap-3"
+              >
+                <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px]">
+                  {staff.avatar ? <img src={staff.avatar} className="w-full h-full rounded-full object-cover" /> : staff.firstName[0]}
+                </div>
+                <div>
+                  <p className="text-foreground">{staff.firstName} {staff.lastName}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">{staff.role}</p>
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

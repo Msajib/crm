@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import {
   TrendingUp, Users, Briefcase, CheckCircle2, ArrowUpRight,
   BarChart3, Sparkles, Phone, Mail, MessageSquare,
-  ClipboardList, AlertCircle, CheckSquare2, RefreshCw
+  ClipboardList, AlertCircle, CheckSquare2, RefreshCw, Zap
 } from 'lucide-react';
 
 const DEFAULT_PREFS = ['Revenue', 'Deals', 'Contacts', 'Tasks', 'RevenueChart', 'AIInsights'];

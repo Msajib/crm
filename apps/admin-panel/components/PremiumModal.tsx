@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Portal from './Portal';
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -34,9 +35,10 @@ export default function PremiumModal({
   }, [isOpen]);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 md:p-6 lg:p-10">
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 lg:p-10">
           {/* Overlay */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -83,5 +85,6 @@ export default function PremiumModal({
         </div>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }

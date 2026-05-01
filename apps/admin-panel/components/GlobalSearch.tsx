@@ -72,8 +72,8 @@ export default function GlobalSearch() {
     setIsOpen(false);
     setQuery('');
     if (type === 'Contact') router.push(`/contacts/${id}`);
-    else if (type === 'Deal') router.push(`/deals`); // Kanban view doesn't support specific ID easily yet, but can route to deals
-    else if (type === 'Task') router.push(`/tasks`);
+    else if (type === 'Deal') router.push(`/deals?id=${id}`);
+    else if (type === 'Task') router.push(`/tasks?id=${id}`);
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {

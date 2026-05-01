@@ -279,7 +279,12 @@ function ContactsContent() {
 
 
       {viewingContact && (
-        <ContactDetailSidebar contact={viewingContact} staffList={staffList} onClose={() => setViewingContact(null)} />
+        <ContactDetailSidebar 
+          contact={viewingContact} 
+          staffList={staffList} 
+          onClose={() => setViewingContact(null)} 
+          onRefresh={fetchContacts}
+        />
       )}
 
       {/* Add Contact Modal */}

@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { ImportProcessor } from './import.processor';
 
 @Injectable()
 export class ImportService {
@@ -10,6 +11,7 @@ export class ImportService {
   constructor(
     @InjectQueue('import-queue') private importQueue: Queue,
     private prisma: PrismaService,
+    private importProcessor: ImportProcessor,
   ) {}
 
   async createImportJob(tenantId: string, userId: string, file: any) {
@@ -23,20 +25,39 @@ export class ImportService {
       },
     });
 
-    // Add to BullMQ queue
-    await this.importQueue.add('process-contacts', {
-      jobId: job.id,
-      tenantId,
-      userId,
-      fileBuffer: file.buffer, // Note: In prod, upload to S3 first
-      fileType: file.mimetype,
-    }, {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 5000,
-      },
-    });
+    // Add to BullMQ queue with a timeout check
+    try {
+      await Promise.race([
+        this.importQueue.add('process-contacts', {
+          jobId: job.id,
+          tenantId,
+          userId,
+          fileBuffer: file.buffer,
+          fileType: file.mimetype,
+          fileName: file.originalname,
+        }, {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Redis timeout')), 2000))
+      ]);
+      this.logger.log(`Job ${job.id} added to background queue`);
+    } catch (err) {
+      this.logger.warn(`Redis unavailable. Processing import ${job.id} synchronously...`);
+      // Sync Fallback
+      setTimeout(() => {
+        this.importProcessor.process({
+          data: {
+            jobId: job.id,
+            tenantId,
+            userId,
+            fileBuffer: file.buffer,
+            fileType: file.mimetype,
+            fileName: file.originalname,
+          }
+        } as any).catch(e => this.logger.error(`Sync import failed: ${e.message}`));
+      }, 100);
+    }
 
     return job;
   }

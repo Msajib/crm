@@ -23,6 +23,10 @@ import {
   Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+const MotionDiv = motion.div as any;
+const MotionH1 = motion.h1 as any;
+const MotionP = motion.p as any;
+const MotionSection = motion.section as any;
 import { toast } from 'react-hot-toast';
 import { useTheme } from 'next-themes';
 
@@ -153,27 +157,27 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative pt-40 pb-32 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none opacity-20">
-          <motion.div animate={floatAnimation} className="absolute top-0 right-0 w-96 h-96 bg-primary/40 rounded-full blur-[120px]" />
-          <motion.div animate={{ ...floatAnimation, y: [10, -10, 10] }} className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/40 rounded-full blur-[120px]" />
+          <MotionDiv animate={floatAnimation} className="absolute top-0 right-0 w-96 h-96 bg-primary/40 rounded-full blur-[120px]" />
+          <MotionDiv animate={{ ...floatAnimation, y: [10, -10, 10] }} className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/40 rounded-full blur-[120px]" />
         </div>
 
-        <motion.div 
+        <MotionDiv 
           initial="hidden" 
           animate="visible" 
           variants={staggerContainer} 
           className="max-w-7xl mx-auto px-6 relative z-10 text-center"
         >
-          <motion.div variants={fadeInUp} className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-10">
+          <MotionDiv variants={fadeInUp} className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-10">
              <Sparkles className="w-4 h-4 text-primary" />
              <span className="text-[10px] font-black uppercase tracking-widest text-primary">v2.0 Now with Autonomous AI Agent</span>
-          </motion.div>
-          <motion.h1 variants={fadeInUp} className="text-5xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tight">
+          </MotionDiv>
+          <MotionH1 variants={fadeInUp} className="text-5xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tight">
             The CRM that <span className="text-gradient">Thinks</span> and <span className="text-gradient">Acts</span>.
-          </motion.h1>
-          <motion.p variants={fadeInUp} className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
+          </MotionH1>
+          <MotionP variants={fadeInUp} className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
             Move beyond data entry. Our autonomous AI Agent identifies leads, scores deals, and automates follow-ups while you focus on closing.
-          </motion.p>
-          <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-6">
+          </MotionP>
+          <MotionDiv variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Link href="/login" className="w-full sm:w-auto px-10 py-5 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 hover:opacity-90 transition-all active:scale-95 flex items-center justify-center space-x-3">
                <span>Deploy Now</span>
                <ChevronRight className="w-5 h-5" />
@@ -181,38 +185,38 @@ export default function LandingPage() {
             <Link href="#features" className="w-full sm:w-auto px-10 py-5 bg-muted border border-border text-foreground rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-accent transition-all flex items-center justify-center">
                Watch Demo
             </Link>
-          </motion.div>
+          </MotionDiv>
 
           {/* Dashboard Preview */}
-          <motion.div variants={fadeInUp} className="mt-24 glass-premium rounded-[48px] border border-border p-4 relative group">
+          <MotionDiv variants={fadeInUp} className="mt-24 glass-premium rounded-[48px] border border-border p-4 relative group">
              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-[50px] blur opacity-10 group-hover:opacity-20 transition-opacity"></div>
              <div className="relative bg-background rounded-[40px] overflow-hidden border border-border aspect-[16/9] flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-tr from-muted/50 to-background"></div>
                 <div className="relative z-10 text-center space-y-4">
-                   <motion.div animate={floatAnimation} className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                   <MotionDiv animate={floatAnimation} className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
                       <BarChart3 className="w-10 h-10 text-primary" />
-                   </motion.div>
+                   </MotionDiv>
                    <p className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">Interactive Dashboard Preview</p>
                    <h3 className="text-2xl font-black">AI-Powered Sales Analytics</h3>
                 </div>
              </div>
-          </motion.div>
-        </motion.div>
+          </MotionDiv>
+        </MotionDiv>
       </section>
 
       {/* Features Grid */}
       <section id="features" className="py-32 bg-muted/30 relative">
-        <motion.div 
+        <MotionDiv 
           initial="hidden" 
           whileInView="visible" 
           viewport={{ once: true, margin: "-100px" }} 
           variants={staggerContainer} 
           className="max-w-7xl mx-auto px-6"
         >
-          <motion.div variants={fadeInUp} className="text-center mb-24">
+          <MotionDiv variants={fadeInUp} className="text-center mb-24">
              <h2 className="text-xs font-black text-primary uppercase tracking-[0.4em] mb-4">Enterprise Features</h2>
              <h3 className="text-4xl md:text-5xl font-black">Everything you need to <span className="text-gradient">scale</span>.</h3>
-          </motion.div>
+          </MotionDiv>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <FeatureCard 
@@ -246,22 +250,22 @@ export default function LandingPage() {
               desc="Four tiers of access control ensuring team members only see the data they need to perform their roles."
             />
           </div>
-        </motion.div>
+        </MotionDiv>
       </section>
 
       {/* Pricing */}
       <section id="pricing" className="py-32">
-        <motion.div 
+        <MotionDiv 
           initial="hidden" 
           whileInView="visible" 
           viewport={{ once: true, margin: "-100px" }} 
           variants={staggerContainer} 
           className="max-w-7xl mx-auto px-6"
         >
-          <motion.div variants={fadeInUp} className="text-center mb-20">
+          <MotionDiv variants={fadeInUp} className="text-center mb-20">
              <h2 className="text-display mb-6">Simple, Scalable <span className="text-gradient">Pricing</span>.</h2>
              <p className="text-body text-muted-foreground">Choose the plan that fits your growth trajectory.</p>
-          </motion.div>
+          </MotionDiv>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
              {plans.length > 0 ? (
@@ -285,12 +289,12 @@ export default function LandingPage() {
                </div>
              )}
           </div>
-        </motion.div>
+        </MotionDiv>
       </section>
 
       {/* CTA */}
       <section className="py-32">
-         <motion.div 
+         <MotionDiv 
            initial="hidden" 
            whileInView="visible" 
            viewport={{ once: true }} 
@@ -298,7 +302,7 @@ export default function LandingPage() {
            className="max-w-7xl mx-auto px-6"
          >
             <div className="glass-premium rounded-[60px] border border-border p-12 md:p-24 text-center relative overflow-hidden bg-primary/5">
-               <motion.div animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 5, repeat: Infinity }} className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[100px]"></motion.div>
+               <MotionDiv animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 5, repeat: Infinity }} className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[100px]"></MotionDiv>
                <div className="relative z-10">
                   <h2 className="text-display md:text-6xl mb-10 leading-tight">Ready to transform your <span className="text-gradient">sales engine</span>?</h2>
                   <Link href="/login" className="inline-flex items-center space-x-4 px-12 py-6 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 hover:opacity-90 transition-all active:scale-95">
@@ -308,7 +312,7 @@ export default function LandingPage() {
                   <p className="text-micro text-muted-foreground mt-8 italic">No credit card required • Instant setup</p>
                </div>
             </div>
-         </motion.div>
+         </MotionDiv>
       </section>
 
       {/* Footer */}
@@ -356,19 +360,19 @@ export default function LandingPage() {
 
 function FeatureCard({ icon, title, desc }: any) {
   return (
-    <motion.div variants={fadeInUp} className="glass-premium p-8 rounded-[40px] border border-border group hover:border-primary/30 transition-all premium-shadow">
+    <MotionDiv variants={fadeInUp} className="glass-premium p-8 rounded-[40px] border border-border group hover:border-primary/30 transition-all premium-shadow">
       <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform text-primary">
         {React.cloneElement(icon, { className: 'w-7 h-7' })}
       </div>
       <h4 className="text-subheading text-foreground mb-4">{title}</h4>
       <p className="text-body text-muted-foreground">{desc}</p>
-    </motion.div>
+    </MotionDiv>
   );
 }
 
 function PricingCard({ tier, price, period, features, popular, description, cta, onSubscribe }: any) {
   return (
-    <motion.div variants={fadeInUp} className={`p-10 rounded-[48px] border flex flex-col transition-all ${popular ? 'bg-primary text-white border-transparent scale-105 shadow-3xl shadow-primary/30' : 'bg-card border-border text-foreground hover:border-primary/30'}`}>
+    <MotionDiv variants={fadeInUp} className={`p-10 rounded-[48px] border flex flex-col transition-all ${popular ? 'bg-primary text-white border-transparent scale-105 shadow-3xl shadow-primary/30' : 'bg-card border-border text-foreground hover:border-primary/30'}`}>
        {popular && <span className="bg-white/20 text-white text-micro px-4 py-1.5 rounded-full self-start mb-8">Most Popular</span>}
        <h4 className={`text-subheading mb-2 ${popular ? 'text-white' : 'text-foreground'}`}>{tier}</h4>
        <div className="flex items-baseline space-x-1 mb-6">
@@ -395,7 +399,7 @@ function PricingCard({ tier, price, period, features, popular, description, cta,
        >
           {cta || 'Get Started'}
        </button>
-    </motion.div>
+    </MotionDiv>
   );
 }
 
@@ -510,7 +514,7 @@ function CheckoutModal({ plan, onClose }: any) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div 
+      <MotionDiv 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }} 
@@ -518,7 +522,7 @@ function CheckoutModal({ plan, onClose }: any) {
         className="absolute inset-0 bg-background/80 backdrop-blur-md" 
       />
       
-      <motion.div 
+      <MotionDiv 
         initial={{ opacity: 0, scale: 0.95, y: 20 }} 
         animate={{ opacity: 1, scale: 1, y: 0 }} 
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -531,14 +535,14 @@ function CheckoutModal({ plan, onClose }: any) {
 
         {isSuccess ? (
           <div className="p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-            <motion.div 
+            <MotionDiv 
               initial={{ scale: 0 }} 
               animate={{ scale: 1 }} 
               transition={{ type: "spring", stiffness: 200, damping: 15 }}
               className="w-24 h-24 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-6"
             >
               <CheckCircle2 className="w-12 h-12" />
-            </motion.div>
+            </MotionDiv>
             <h2 className="text-3xl font-black mb-3">Subscription Active!</h2>
             <p className="text-muted-foreground font-medium">Redirecting to your dashboard...</p>
           </div>
@@ -657,7 +661,7 @@ function CheckoutModal({ plan, onClose }: any) {
             </form>
           </div>
         )}
-      </motion.div>
+      </MotionDiv>
     </div>
   );
 }
