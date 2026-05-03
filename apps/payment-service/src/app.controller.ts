@@ -10,6 +10,16 @@ export class AppController {
     return 'Payment Service is running!';
   }
 
+  @Get('health')
+  health() {
+    return {
+      status: 'ok',
+      service: 'payment-service',
+      port: process.env.PAYMENT_SERVICE_PORT || 3006,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Post('config')
   async saveConfig(@Body() body: any, @Headers('x-tenant-id') tenantId: string) {
     if (!body.gateway) throw new HttpException('Gateway is required', HttpStatus.BAD_REQUEST);

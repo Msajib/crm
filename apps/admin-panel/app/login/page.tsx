@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { Shield, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
+import { PasswordField } from '@/components/ui/PasswordField';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -80,100 +81,117 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050505]">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0a0a1a] to-[#1a0a2a] z-0" />
-      
-      {/* Animated Glows */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[150px] animate-pulse delay-1000" />
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+      {/* Left Pane - Image/Branding */}
+      <div className="hidden md:flex md:w-1/2 bg-muted relative overflow-hidden p-12 flex-col justify-between items-start border-r border-border/50">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background z-0" />
+        <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-70" />
+        
+        {/* Branding Logo */}
+        <div className="relative z-10 flex items-center space-x-3">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+            <Sparkles className="text-primary-foreground w-5 h-5" />
+          </div>
+          <span className="text-2xl font-bold tracking-tight text-foreground">CRM Pro</span>
+        </div>
 
-      <div className="relative z-10 w-full max-w-[480px] p-4 animate-fade-in">
-        <div className="glass-premium rounded-[60px] border border-white/5 p-12 shadow-2xl backdrop-blur-3xl bg-black/40">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-[32px] bg-gradient-to-br from-primary/20 to-purple-500/20 border border-white/10 mb-8 shadow-2xl relative group overflow-hidden">
-              <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+        {/* Hero Text */}
+        <div className="relative z-10 max-w-lg mt-auto mb-16">
+          <h2 className="text-4xl lg:text-5xl font-semibold tracking-tight text-foreground mb-6 leading-tight">
+            Accelerate your business relationships.
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            A minimalist, powerful platform designed to help your team manage leads, automate workflows, and close deals faster.
+          </p>
+        </div>
+
+        {/* Footer info inside left pane */}
+        <div className="relative z-10 flex items-center space-x-6 text-sm font-medium text-muted-foreground">
+           <div className="flex items-center space-x-2">
+              <Shield className="w-4 h-4" />
+              <span>Bank-grade Security</span>
+           </div>
+           <div className="flex items-center space-x-2">
+              <Lock className="w-4 h-4" />
+              <span>TLS 1.3 Encrypted</span>
+           </div>
+        </div>
+      </div>
+
+      {/* Right Pane - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative">
+        <div className="w-full max-w-[400px] mx-auto animate-fade-in">
+          {/* Mobile Header (Hidden on Desktop) */}
+          <div className="md:hidden flex flex-col items-center mb-10 text-center">
+            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/20 mb-4">
+              <Sparkles className="text-primary-foreground w-6 h-6" />
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-white mb-3">
-              CRM <span className="text-primary italic">Pro</span>
-            </h1>
-            <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em]">Enterprise Intelligence Suite</p>
+            <h1 className="text-2xl font-bold text-foreground">CRM Pro</h1>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Welcome back</h2>
+            <p className="text-sm text-muted-foreground">Please enter your credentials to access your account.</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-4">
-              <div className="relative group">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
-                <input
-                  type="email"
-                  required
-                  placeholder="Intelligence ID (Email)"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 pl-14 pr-6 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all text-sm font-medium"
-                />
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1.5" htmlFor="email">Email address</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    placeholder="name@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl py-3 pl-[44px] pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm shadow-sm"
+                  />
+                </div>
               </div>
               
-              <div className="relative group">
-                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
-                <input
-                  type="password"
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1.5" htmlFor="password">Password</label>
+                <PasswordField
+                  id="password"
+                  name="password"
                   required
-                  placeholder="Security Access Key"
+                  placeholder="Enter your password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 pl-14 pr-6 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all text-sm font-medium"
+                  onChange={setPassword}
+                  className="w-full bg-background border border-border rounded-xl py-3 pl-[44px] pr-[44px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm shadow-sm"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between px-2">
-              <label className="flex items-center cursor-pointer group">
-                <input type="checkbox" className="hidden peer" />
-                <div className="w-5 h-5 border-2 border-white/10 rounded-md bg-white/5 peer-checked:bg-primary peer-checked:border-primary transition-all flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
-                </div>
-                <span className="ml-3 text-xs font-bold text-gray-400 group-hover:text-white transition-colors uppercase tracking-widest">Keep Session</span>
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center space-x-2 cursor-pointer group">
+                <input type="checkbox" className="rounded border-border text-primary focus:ring-primary/20 bg-background shadow-sm" />
+                <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Remember me</span>
               </label>
-              <Link href="/forgot-password" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest">
-                Forgot Key?
+              <Link href="/forgot-password" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                Forgot password?
               </Link>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full bg-primary hover:bg-primary/90 text-white font-black py-5 rounded-3xl shadow-xl shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 overflow-hidden"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 rounded-xl shadow-sm transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 flex items-center justify-center space-x-2 mt-4"
             >
-              <div className="relative z-10 flex items-center justify-center space-x-3 uppercase tracking-[0.2em] text-xs">
-                <span>{isLoading ? 'Decrypting...' : 'Initiate Secure Login'}</span>
-                {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+              <span>{isLoading ? 'Signing in...' : 'Sign in'}</span>
+              {!isLoading && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
 
-          <div className="mt-10 pt-8 border-t border-white/5 text-center">
-            <p className="text-xs font-medium text-gray-500">
-              New operative?{' '}
-              <Link href="/register" className="text-primary font-black hover:underline underline-offset-4">
-                REQUEST ACCESS
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        {/* Footer info */}
-        <div className="mt-8 flex items-center justify-center space-x-8 opacity-40">
-           <div className="flex items-center space-x-2">
-              <Sparkles className="w-3 h-3 text-primary" />
-              <span className="text-[10px] font-black uppercase text-white tracking-widest">AI Enhanced</span>
-           </div>
-           <div className="flex items-center space-x-2">
-              <Shield className="w-3 h-3 text-primary" />
-              <span className="text-[10px] font-black uppercase text-white tracking-widest">TLS 1.3 Secure</span>
-           </div>
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Don't have an account?{' '}
+            <Link href="/register" className="font-medium text-primary hover:underline underline-offset-4">
+              Request access
+            </Link>
+          </p>
         </div>
       </div>
     </div>

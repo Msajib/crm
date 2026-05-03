@@ -32,7 +32,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
-            <Toaster position="top-right" />
+            <Toaster position="top-right" toastOptions={{ className: 'z-[99999]' }} containerStyle={{ zIndex: 99999 }} />
           </ThemeProvider>
         </BrandingProvider>
       </body>

@@ -13,6 +13,7 @@ import {
   Zap
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { PasswordField } from '@/components/ui/PasswordField';
 
 export default function SetupWizard() {
   const [step, setStep] = useState(1);
@@ -111,14 +112,22 @@ export default function SetupWizard() {
 function EnvironmentForm() {
   return (
     <div className="grid grid-cols-2 gap-6">
-       <div className="space-y-2">
-          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">PostgreSQL URI</label>
-          <input type="password" placeholder="postgresql://..." className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs" />
-       </div>
-       <div className="space-y-2">
-          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Redis Connection</label>
-          <input type="password" placeholder="redis://..." className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs" />
-       </div>
+       <PasswordField
+          label="PostgreSQL URI"
+          placeholder="postgresql://..."
+          className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs"
+          showIcon={false}
+          value=""
+          onChange={() => {}}
+       />
+       <PasswordField
+          label="Message Broker URI"
+          placeholder="redis://... (Dragonfly/KeyDB supported)"
+          className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs"
+          showIcon={false}
+          value=""
+          onChange={() => {}}
+       />
     </div>
   );
 }
@@ -129,7 +138,13 @@ function AIProviderForm() {
          {['Gemini 2.5 Pro', 'GPT-5 (OpenAI)', 'Claude 3.5 (Anthropic)'].map(p => (
             <div key={p} className="flex items-center justify-between p-4 bg-muted/30 border border-border rounded-2xl">
                <span className="text-xs font-bold text-foreground">{p}</span>
-               <input type="password" placeholder="Enter API Key" className="bg-background border border-border rounded-xl px-4 py-2 text-[10px] w-64" />
+               <PasswordField
+                 placeholder="Enter API Key"
+                 className="bg-background border border-border rounded-xl px-4 py-2 text-[10px] w-64"
+                 showIcon={false}
+                 value=""
+                 onChange={() => {}}
+               />
             </div>
          ))}
       </div>
@@ -143,10 +158,14 @@ function SecurityForm() {
             <Shield className="w-8 h-8 text-emerald-500" />
             <p className="text-xs text-emerald-600 font-bold">PostgreSQL RLS policies have been detected. The wizard will automatically map roles to DB policies.</p>
          </div>
-         <div className="space-y-2">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">JWT Master Secret</label>
-            <input type="password" placeholder="••••••••••••••••" className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs" />
-         </div>
+            <PasswordField
+               label="JWT Master Secret"
+               placeholder="••••••••••••••••"
+               className="w-full bg-muted border border-border rounded-2xl px-6 py-4 text-xs"
+               showIcon={false}
+               value=""
+               onChange={() => {}}
+            />
       </div>
    );
 }

@@ -1,25 +1,29 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AppModule } from './app.module';
+import * as helmet from 'helmet';
 import { json, urlencoded } from 'express';
+import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log', 'debug'],
   });
 
-  // Increase payload limits for base64 image uploads
+  // Security headers
+  app.use((helmet as any).default ? (helmet as any).default() : (helmet as any)());
+
+  // Payload limits
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 
+  // Global exception filter
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   // Global validation pipe
   app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
 
   // CORS
@@ -29,7 +33,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
   });
 
-  // Swagger API Docs
+  // Swagger
   const config = new DocumentBuilder()
     .setTitle('CRM Auth Service')
     .setDescription('Authentication & Authorization Microservice')
@@ -38,8 +42,7 @@ async function bootstrap() {
     .addTag('auth')
     .addTag('users')
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
 
   const port = process.env.AUTH_SERVICE_PORT || 3001;
   await app.listen(port);

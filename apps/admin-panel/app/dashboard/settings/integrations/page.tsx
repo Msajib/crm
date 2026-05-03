@@ -29,6 +29,7 @@ import {
   Settings2,
   Globe
 } from 'lucide-react';
+import { PasswordField } from '@/components/ui/PasswordField';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 import PremiumModal from '@/components/PremiumModal';
@@ -295,14 +296,22 @@ export default function IntegrationSettings() {
                           </p>
                        </div>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          <div className="space-y-3">
-                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Account SID</label>
-                             <input type="password" value={config.twilioSid} onChange={(e) => setConfig({...config, twilioSid: e.target.value})} placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-emerald-500/50" />
-                          </div>
-                          <div className="space-y-3">
-                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Auth Token</label>
-                             <input type="password" value={config.twilioToken} onChange={(e) => setConfig({...config, twilioToken: e.target.value})} placeholder="••••••••••••••••••••••••••••••••" className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-emerald-500/50" />
-                          </div>
+                           <PasswordField
+                             label="Account SID"
+                             value={config.twilioSid}
+                             onChange={(val) => setConfig({...config, twilioSid: val})}
+                             placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                             className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-emerald-500/50"
+                             showIcon={false}
+                           />
+                           <PasswordField
+                             label="Auth Token"
+                             value={config.twilioToken}
+                             onChange={(val) => setConfig({...config, twilioToken: val})}
+                             placeholder="••••••••••••••••••••••••••••••••"
+                             className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-emerald-500/50"
+                             showIcon={false}
+                           />
                           <div className="space-y-3">
                              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Twilio Number</label>
                              <input type="text" value={config.twilioPhone} onChange={(e) => setConfig({...config, twilioPhone: e.target.value})} placeholder="+1234567890" className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-emerald-500/50" />
@@ -329,10 +338,14 @@ export default function IntegrationSettings() {
                              Go to **Developer Settings → API Access** in your MessageBird dashboard to generate a Live API Key.
                           </p>
                        </div>
-                       <div className="space-y-3">
-                          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Live API Key</label>
-                          <input type="password" value={config.messagebirdKey} onChange={(e) => setConfig({...config, messagebirdKey: e.target.value})} placeholder="Enter your live API key" className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-blue-500/50" />
-                       </div>
+                       <PasswordField
+                          label="Live API Key"
+                          value={config.messagebirdKey}
+                          onChange={(val) => setConfig({...config, messagebirdKey: val})}
+                          placeholder="Enter your live API key"
+                          className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-blue-500/50"
+                          showIcon={false}
+                        />
                        <button onClick={() => saveConfig('MessageBird')} className="w-full py-5 bg-blue-600 text-white rounded-[24px] font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/30 flex items-center justify-center gap-3">
                           <Save className="w-5 h-5" /> Deploy MessageBird
                        </button>
@@ -368,10 +381,14 @@ export default function IntegrationSettings() {
                              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">SIP Username (Extension)</label>
                              <input type="text" value={config.amberUser} onChange={(e) => setConfig({...config, amberUser: e.target.value})} placeholder="096xxxxxxxx" className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-indigo-500/50" />
                           </div>
-                          <div className="space-y-3">
-                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">SIP Password</label>
-                             <input type="password" value={config.amberPass} onChange={(e) => setConfig({...config, amberPass: e.target.value})} placeholder="••••••••" className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-indigo-500/50" />
-                          </div>
+                          <PasswordField
+                             label="SIP Password"
+                             value={config.amberPass}
+                             onChange={(val) => setConfig({...config, amberPass: val})}
+                             placeholder="••••••••"
+                             className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-indigo-500/50"
+                             showIcon={false}
+                           />
                           <div className="space-y-3">
                              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Caller ID</label>
                              <input type="text" value={config.amberCallerId} onChange={(e) => setConfig({...config, amberCallerId: e.target.value})} placeholder="Your IP Phone Number" className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold outline-none transition-all shadow-inner focus:border-indigo-500/50" />
@@ -461,39 +478,25 @@ export default function IntegrationSettings() {
                                    />
                                 </div>
                              </div>
-                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Password / Key</label>
-                                <div className="relative group">
-                                   <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-indigo-600 transition-colors" />
-                                   <input 
-                                      type={showPass ? "text" : "password"} 
-                                      value={emailConfig.pass}
-                                      onChange={(e) => setEmailConfig({...emailConfig, pass: e.target.value})}
-                                      className="w-full bg-muted border-2 border-border/50 rounded-2xl pl-14 pr-14 py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none transition-all shadow-inner" 
-                                      placeholder="••••••••••••" 
-                                   />
-                                   <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-6 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-indigo-600 transition-colors">
-                                      {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                   </button>
-                                </div>
-                             </div>
+                              <PasswordField
+                                label="Password / Key"
+                                value={emailConfig.pass}
+                                onChange={(val) => setEmailConfig({...emailConfig, pass: val})}
+                                placeholder="••••••••••••"
+                                className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none transition-all shadow-inner"
+                                showIcon={false}
+                              />
                           </>
                        ) : (
                           <div className="md:col-span-2 space-y-3">
-                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">{emailConfig.provider} API Key</label>
-                             <div className="relative group">
-                                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-indigo-600 transition-colors" />
-                                <input 
-                                   type={showPass ? "text" : "password"} 
-                                   value={emailConfig.apiKey}
-                                   onChange={(e) => setEmailConfig({...emailConfig, apiKey: e.target.value})}
-                                   placeholder={`Enter your ${emailConfig.provider} API key`}
-                                   className="w-full bg-muted border-2 border-border/50 rounded-2xl pl-14 pr-14 py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none transition-all shadow-inner"
-                                />
-                                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-6 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-indigo-600 transition-colors">
-                                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
-                             </div>
+                             <PasswordField
+                                label={`${emailConfig.provider} API Key`}
+                                value={emailConfig.apiKey}
+                                onChange={(val) => setEmailConfig({...emailConfig, apiKey: val})}
+                                placeholder={`Enter your ${emailConfig.provider} API key`}
+                                className="w-full bg-muted border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none transition-all shadow-inner"
+                                showIcon={false}
+                             />
                           </div>
                        )}
                     </div>
@@ -573,14 +576,14 @@ export default function IntegrationSettings() {
                          <span className="text-[10px] font-black uppercase tracking-widest">Enterprise Cloud API (Meta)</span>
                       </div>
                       <div className="space-y-4">
-                         <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-2">Permanent Access Token</label>
-                         <input 
-                            type="password" 
-                            value={config.whatsappKey}
-                            onChange={(e) => setConfig({...config, whatsappKey: e.target.value})}
-                            placeholder="EAABxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                            className="w-full bg-background border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-inner"
-                         />
+                           <PasswordField
+                             label="Permanent Access Token"
+                             value={config.whatsappKey}
+                             onChange={(val) => setConfig({...config, whatsappKey: val})}
+                             placeholder="EAABxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                             className="w-full bg-background border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-inner"
+                             showIcon={false}
+                           />
                          <div className="flex items-center gap-2 p-4 bg-background/50 rounded-xl border border-border text-[10px] text-muted-foreground font-medium italic">
                             <Info className="w-4 h-4 text-emerald-500" />
                             Official API requires a verified Meta Business Account and pre-approved message templates.
@@ -604,16 +607,14 @@ export default function IntegrationSettings() {
                                className="w-full bg-background border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-inner"
                             />
                          </div>
-                         <div className="space-y-3">
-                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-2">Instance ID / Secret</label>
-                            <input 
-                               type="password" 
-                               value={config.whatsappInstanceId}
-                               onChange={(e) => setConfig({...config, whatsappInstanceId: e.target.value})}
-                               placeholder="INSTANCE_872x_J9"
-                               className="w-full bg-background border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-inner"
-                            />
-                         </div>
+                         <PasswordField
+                             label="Instance ID / Secret"
+                             value={config.whatsappInstanceId}
+                             onChange={(val) => setConfig({...config, whatsappInstanceId: val})}
+                             placeholder="INSTANCE_872x_J9"
+                             className="w-full bg-background border-2 border-border/50 rounded-2xl px-8 py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-inner"
+                             showIcon={false}
+                          />
                       </div>
                       <div className="flex items-center justify-between p-6 bg-background rounded-3xl border border-border">
                          <div className="space-y-1">

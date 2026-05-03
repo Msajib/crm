@@ -66,6 +66,11 @@ export class CreateContactDto {
   @IsOptional()
   @IsString()
   assignedTo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  rawPayload?: Record<string, any>;
 }
 
 export class UpdateContactDto {
@@ -83,6 +88,7 @@ export class UpdateContactDto {
   @ApiPropertyOptional() @IsOptional() @IsString() status?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() jobTitle?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() address?: string;
+  @ApiPropertyOptional() @IsOptional() @IsObject() rawPayload?: Record<string, any>;
 }
 
 export class CreateDealDto {

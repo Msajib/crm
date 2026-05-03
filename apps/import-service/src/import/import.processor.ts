@@ -56,25 +56,65 @@ export class ImportProcessor extends WorkerHost {
       const crmServiceUrl = process.env.CRM_SERVICE_URL || 'http://localhost:3003';
       const commServiceUrl = process.env.COMMUNICATION_SERVICE_URL || 'http://localhost:3004';
 
+      const mapping = job.data.mapping || {};
+      const reversedMapping = Object.fromEntries(
+        Object.entries(mapping).map(([k, v]) => [v, k])
+      );
+
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         try {
-          // 1. Validate mandatory fields
-          if (!row.email) {
-            throw new Error('Missing email');
-          }
-
-          // 2. Map row to Contact DTO
-          const contactDto = {
-            firstName: row.firstName || row.first_name || '',
-            lastName: row.lastName || row.last_name || '',
-            email: row.email,
-            phone: row.phone || row.mobile || '',
-            company: row.company || '',
+          // 1. Map row to Contact DTO dynamically
+          const contactDto: any = {
             source: 'IMPORT',
             sourcePlatform: 'MANUAL',
             type: 'CONTACT',
+            rawPayload: {}
           };
+
+          // Use mapping if provided
+          if (Object.keys(mapping).length > 0) {
+            Object.entries(mapping).forEach(([csvHeader, crmField]) => {
+              if (crmField && row[csvHeader] !== undefined) {
+                contactDto[crmField as string] = row[csvHeader];
+              }
+            });
+
+            // Merge unmapped columns into rawPayload
+            Object.keys(row).forEach(key => {
+              if (!mapping[key]) {
+                contactDto.rawPayload[key] = row[key];
+              }
+            });
+          } else {
+            // Smart Fallback Mapping (Case insensitive & variations)
+            const getVal = (possibleKeys: string[]) => {
+              const key = Object.keys(row).find(k => 
+                possibleKeys.map(pk => pk.toLowerCase()).includes(k.toLowerCase())
+              );
+              return key ? row[key] : '';
+            };
+
+            contactDto.firstName = getVal(['firstName', 'first_name', 'fname', 'first']);
+            contactDto.lastName = getVal(['lastName', 'last_name', 'lname', 'last']);
+            contactDto.email = getVal(['email', 'mail', 'e-mail']);
+            contactDto.phone = getVal(['phone', 'mobile', 'cell', 'tel']);
+            contactDto.company = getVal(['company', 'organization', 'business']);
+
+            // Merge everything else into rawPayload
+            const mappedKeys = ['firstName', 'lastName', 'email', 'phone', 'company'];
+            Object.keys(row).forEach(key => {
+               const isMapped = mappedKeys.some(mk => key.toLowerCase().includes(mk.toLowerCase()));
+               if (!isMapped) {
+                  contactDto.rawPayload[key] = row[key];
+               }
+            });
+          }
+
+          // 2. Validate mandatory email
+          if (!contactDto.email) {
+            throw new Error(`Missing email (checked headers: ${Object.keys(row).join(', ')})`);
+          }
 
           // 3. ── Duplicate Detection ─────────────────────────────
           try {
@@ -82,26 +122,28 @@ export class ImportProcessor extends WorkerHost {
             if (contactDto.email) queryParams.push(`email=${encodeURIComponent(contactDto.email)}`);
             if (contactDto.phone) queryParams.push(`phone=${encodeURIComponent(contactDto.phone)}`);
 
-            const checkUrl = `${crmServiceUrl}/contacts?${queryParams.join('&')}&limit=1`;
-            const { data: existingResult } = await firstValueFrom(
-              this.httpService.get(checkUrl, {
-                headers: { 'x-tenant-id': tenantId },
-              }),
-            );
+            if (queryParams.length > 0) {
+              const checkUrl = `${crmServiceUrl}/contacts?${queryParams.join('&')}&limit=1`;
+              const { data: existingResult } = await firstValueFrom(
+                this.httpService.get(checkUrl, {
+                  headers: { 'x-tenant-id': tenantId },
+                }),
+              );
 
-            const existing = existingResult?.data || existingResult;
-            const hasMatch = Array.isArray(existing) ? existing.length > 0
-              : existing?.total > 0 || existing?.contacts?.length > 0;
+              const existing = existingResult?.data || existingResult;
+              const hasMatch = Array.isArray(existing) ? existing.length > 0
+                : (existing?.total > 0 || existing?.contacts?.length > 0);
 
-            if (hasMatch) {
-              duplicateCount++;
-              errorLog.push({
-                row: i + 1,
-                data: row,
-                reason: 'DUPLICATE',
-                detail: `Contact with email ${contactDto.email} already exists`,
-              });
-              continue; 
+              if (hasMatch) {
+                duplicateCount++;
+                errorLog.push({
+                  row: i + 1,
+                  email: contactDto.email,
+                  reason: 'DUPLICATE',
+                  detail: `Contact with email ${contactDto.email} already exists`,
+                });
+                continue; 
+              }
             }
           } catch (dupErr: any) {
             this.logger.warn(`Duplicate check failed for row ${i + 1}: ${dupErr.message}`);
@@ -121,7 +163,7 @@ export class ImportProcessor extends WorkerHost {
           failedCount++;
           errorLog.push({
             row: i + 1,
-            data: row,
+            email: row.email || row.Email || 'unknown',
             reason: err.response?.data?.message || err.message,
           });
         }

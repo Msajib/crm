@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { 
-  Users, Search, Plus, Ban, CheckCircle, KeyRound, ArrowUpRight, X, Shield, Lock, Settings, LayoutGrid, Check, Info, Edit2, Trash2, MoreVertical
+  Users, Search, Plus, Ban, CheckCircle, KeyRound, ArrowUpRight, X, Shield, Lock, Settings, LayoutGrid, Check, Info, Edit2, Trash2, MoreVertical, Eye, EyeOff
 } from 'lucide-react';
+import { PasswordField } from '@/components/ui/PasswordField';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 
@@ -584,17 +585,15 @@ export default function UserManagementPage() {
                   />
                </div>
 
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Security Access Key</label>
-                  <input 
-                    required 
-                    type="password" 
-                    value={newMember.password}
-                    onChange={(e) => setNewMember({...newMember, password: e.target.value})}
-                    className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" 
-                    placeholder="••••••••" 
-                  />
-               </div>
+               <PasswordField
+                 id="password"
+                 label="Security Access Key"
+                 required
+                 value={newMember.password}
+                 onChange={(val) => setNewMember({...newMember, password: val})}
+                 className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                 showIcon={false}
+               />
 
                <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Assigned Security Role</label>
@@ -722,17 +721,16 @@ export default function UserManagementPage() {
             <p className="text-sm text-muted-foreground mt-2 font-medium mb-8">Establish a new security access key for this operative.</p>
 
             <form onSubmit={handleResetPassword} className="space-y-6">
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">New Access Key</label>
-                  <input 
-                    required 
-                    type="password" 
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" 
-                    placeholder="Enter new strong password" 
-                  />
-               </div>
+               <PasswordField
+                 id="newPassword"
+                 label="New Access Key"
+                 required
+                 value={newPassword}
+                 onChange={setNewPassword}
+                 className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                 placeholder="Enter new strong password"
+                 showIcon={false}
+               />
                <button type="submit" className="w-full py-5 bg-amber-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-amber-500/30 hover:opacity-90 transition-all active:scale-95 mt-4">
                  Update Access Key
                </button>

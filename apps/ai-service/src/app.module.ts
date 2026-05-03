@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { AIModule } from './ai/ai.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -9,5 +10,6 @@ import { AIModule } from './ai/ai.module';
     PrismaModule,
     AIModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

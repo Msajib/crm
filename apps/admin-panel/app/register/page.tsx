@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import { PasswordField } from '@/components/ui/PasswordField';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -144,19 +145,16 @@ export default function RegisterPage() {
                 </select>
               </div>
             </div>
-            <div>
-              <label htmlFor="password" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5 ml-1">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="appearance-none relative block w-full px-4 py-3 border border-border bg-background placeholder-muted-foreground text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all"
-                placeholder="••••••••"
-              />
-            </div>
+            <PasswordField
+              id="password"
+              name="password"
+              label="Password"
+              required
+              value={formData.password}
+              onChange={(val) => setFormData({...formData, password: val})}
+              className="appearance-none relative block w-full px-4 py-3 border border-border bg-background placeholder-muted-foreground text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all"
+              showIcon={false}
+            />
           </div>
 
           <div>

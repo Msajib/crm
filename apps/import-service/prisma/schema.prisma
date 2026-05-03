@@ -22,6 +22,7 @@ model ImportJob {
   successRows   Int        @default(0) @map("success_rows")
   failedRows    Int        @default(0) @map("failed_rows")
   status      JobStatus    @default(PENDING)
+  mapping     Json?        @map("mapping") // { "Email": "email", "First Name": "firstName" }
   errorLog    Json?        @map("error_log") // Store reasons for failures [{row: 1, reason: 'Duplicate'}]
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")

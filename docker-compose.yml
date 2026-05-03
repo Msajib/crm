@@ -78,10 +78,61 @@ services:
       postgres:
         condition: service_healthy
 
+  # ─── Credential Service ──────────────────────────────────────
+  credential-service:
+    build:
+      context: ./apps/credential-service
+      dockerfile: Dockerfile
+    container_name: crm_credential_service
+    restart: unless-stopped
+    ports:
+      - "3010:3010"
+    env_file:
+      - .env
+    networks:
+      - crm_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ─── Voice Service ───────────────────────────────────────────
+  voice-service:
+    build:
+      context: ./apps/voice-service
+      dockerfile: Dockerfile
+    container_name: crm_voice_service
+    restart: unless-stopped
+    ports:
+      - "3011:3011"
+    env_file:
+      - .env
+    volumes:
+      - voice_uploads:/usr/src/app/uploads
+    networks:
+      - crm_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
 volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  voice_uploads:
 
 networks:
   crm_network:

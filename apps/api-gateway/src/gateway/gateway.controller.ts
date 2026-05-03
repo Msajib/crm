@@ -72,7 +72,7 @@ export class GatewayController {
       SERVICE_ROUTES.auth,
       req.method,
       path,
-      req.body,
+      req,
       headers
     );
   }
@@ -140,13 +140,17 @@ export class GatewayController {
       authHeaders['authorization'] = req.headers.authorization;
     }
 
+    if (req.headers['content-type']) {
+      authHeaders['content-type'] = req.headers['content-type'] as string;
+    }
+
     console.log(`[Proxy] ${req.method} ${service} -> ${serviceUrl}${path}`);
 
     return this.proxyService.forward(
       serviceUrl,
       req.method,
       path,
-      req.body,
+      req,
       authHeaders,
     );
   }

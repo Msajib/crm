@@ -82,6 +82,8 @@ If you need to perform maintenance or reset the system, use these root-level com
 - **CRM Service (Port 3003)**: Core logic for Contacts, Deals, Tasks, and Pipelines.
 - **Communication Service (Port 3004)**: Email, SMS, and in-app notifications.
 - **Import Service (Port 3009)**: High-performance background import engine.
+- **Credential Service (Port 3010)**: Encrypted credential vault for API keys.
+- **Voice Service (Port 3011)**: AI script generation, TTS, and outbound calling.
 - **Admin Panel (Port 3100)**: The Next.js frontend interface.
 
 ---
@@ -138,6 +140,28 @@ The system includes an automated background job that monitors tenant subscriptio
 - **Service**: The scheduler is hosted within the **Tenant Service** (`apps/tenant-service`).
 - **Templates**: Super Admins can customize the warning and final notice messages via **Super Admin -> System Settings -> Email Templates**.
 - **Server Setup**: Ensure the `tenant-service` process is always running. No external crontab is required as it uses internal NestJS scheduling.
+
+---
+
+## 🚢 Production Deployment
+
+The CRM now includes a production-grade automated deployment pipeline utilizing Docker Compose and automated migrations.
+
+### Deployment Steps:
+
+1. **Configure Environment**: Ensure all `.env` files are configured for production (passwords, JWT secrets, database URIs).
+2. **Execute Deployment Script**: Run the unified deployment shell script:
+   ```bash
+   ./infrastructure/deploy.sh
+   ```
+3. **What the Script Does**:
+   - Pulls the latest code from the repository.
+   - Executes `npx prisma migrate deploy` to safely apply database changes.
+   - Rebuilds all custom Docker images (`docker-compose build`).
+   - Launches services with zero-downtime recreation (`docker-compose up -d`).
+   - Verifies deployment health via `docker-compose ps`.
+
+All services now feature global production middleware (Helmet, CORS, rate-limiting, and 10MB payload limits) and dedicated `/health` endpoints.
 
 ---
 

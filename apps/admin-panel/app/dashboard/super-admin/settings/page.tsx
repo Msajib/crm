@@ -5,8 +5,9 @@ import { toast } from 'react-hot-toast';
 import DashboardLayout from '@/components/DashboardLayout';
 import RichTextEditor from '@/components/RichTextEditor';
 import {
-  Save, Palette, Globe, CreditCard, Plus, Trash2, Check, ShieldCheck, GitBranch, LayoutGrid, Zap, Info, ChevronRight, Target, GripVertical, Smartphone, MessageSquare, Sparkles, BarChart3, Webhook, Cpu, Users, History, Building2, X, Edit3, Mail, User, Camera, AlertTriangle, Shield, Phone, ExternalLink, QrCode, Server, Eye, EyeOff, RefreshCw, Settings2, Send, Lock, Link as LinkIcon, Edit2, Layout
+  Save, Palette, Globe, CreditCard, Plus, Trash2, Check, ShieldCheck, GitBranch, LayoutGrid, Zap, Info, ChevronRight, Target, GripVertical, Smartphone, MessageSquare, Sparkles, BarChart3, Webhook, Cpu, Users, History, Building2, X, Edit3, Mail, User, Camera, AlertTriangle, Shield, Phone, ExternalLink, QrCode, Server, Eye, EyeOff, RefreshCw, Settings2, Send, Lock, Link as LinkIcon, Edit2, Layout, Database
 } from 'lucide-react';
+import { PasswordField } from '@/components/ui/PasswordField';
 import PremiumModal from '@/components/PremiumModal';
 import { api } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -115,7 +116,7 @@ function SettingsContent() {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [activeTab, setActiveTab] = useState<'profile' | 'branding' | 'pricing' | 'templates' | 'pipelines' | 'modules' | 'stats' | 'subscription' | 'domain'>((tabParam as any) || 'branding');
+  const [activeTab, setActiveTab] = useState<'profile' | 'branding' | 'pricing' | 'templates' | 'pipelines' | 'modules' | 'stats' | 'subscription' | 'domain' | 'infrastructure'>((tabParam as any) || 'branding');
 
   // Domain State
   const [domainSettings, setDomainSettings] = useState({
@@ -136,6 +137,9 @@ function SettingsContent() {
     metaDescription: 'The ultimate CRM for your business',
     expiryWarningTemplate: '',
     expiryFinalTemplate: '',
+    redisUri: 'redis://localhost:6379',
+    brokerType: 'redis',
+    mcpServerUrl: 'http://localhost:3012',
   });
 
   // User Profile State
@@ -218,6 +222,9 @@ function SettingsContent() {
           metaDescription: settingsData.metaDescription || '',
           expiryWarningTemplate: settingsData.expiryWarningTemplate || '',
           expiryFinalTemplate: settingsData.expiryFinalTemplate || '',
+          redisUri: settingsData.redisUri || 'redis://localhost:6379',
+          brokerType: settingsData.brokerType || 'redis',
+          mcpServerUrl: settingsData.mcpServerUrl || 'http://localhost:3012',
         }));
       }
 
@@ -527,6 +534,7 @@ function SettingsContent() {
       { id: 'templates', label: 'Email', icon: Mail },
       { id: 'modules', label: 'Modules', icon: ShieldCheck },
       { id: 'pipelines', label: 'Pipelines', icon: GitBranch },
+      { id: 'infrastructure', label: 'Infrastructure', icon: Server },
     ] : [
       { id: 'subscription', label: 'Payment', icon: CreditCard },
       { id: 'domain', label: 'Domain', icon: Globe },
@@ -622,10 +630,14 @@ function SettingsContent() {
                                <input type="text" value={profile.lastName} onChange={e => setProfile({...profile, lastName: e.target.value})} className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary" />
                             </div>
                          </div>
-                         <div className="space-y-1">
-                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Security Credentials (New Password)</label>
-                            <input type="password" value={profile.password} onChange={e => setProfile({...profile, password: e.target.value})} placeholder="••••••••" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm font-bold" />
-                         </div>
+                         <PasswordField
+                           id="password"
+                           label="Security Credentials (New Password)"
+                           value={profile.password}
+                           onChange={val => setProfile({...profile, password: val})}
+                           className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm font-bold"
+                           showIcon={false}
+                         />
                          <button onClick={handleSaveProfile} className="px-8 py-3 bg-foreground text-background rounded-xl font-black text-[10px] uppercase tracking-widest hover:opacity-90 transition-all">Update Profile</button>
                       </div>
                    </div>
@@ -787,6 +799,117 @@ function SettingsContent() {
                 </div>
              </div>
            )}
+
+            {activeTab === 'infrastructure' && (
+              <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
+                 <div className="flex justify-between items-start gap-8">
+                    <div className="flex-1 space-y-10">
+                       <section className="space-y-6">
+                          <h3 className="text-2xl font-black text-foreground flex items-center gap-4">
+                             <span className="w-1.5 h-8 bg-amber-500 rounded-full shadow-lg shadow-amber-500/20" />
+                             System Infrastructure
+                          </h3>
+                          
+                          <div className="space-y-8">
+                             <div className="p-8 bg-amber-500/5 border border-amber-500/10 rounded-[32px] flex items-start gap-6">
+                                <Database className="w-8 h-8 text-amber-500 shrink-0 mt-1" />
+                                <div>
+                                   <h4 className="text-sm font-black text-amber-600 uppercase tracking-widest mb-1">Message Broker / Worker Node</h4>
+                                   <p className="text-xs text-muted-foreground leading-relaxed">
+                                      The CRM relies on a high-performance message broker for background job processing (Imports, Campaigns, AI Tasks). 
+                                      You can use standard Redis or highly scalable drop-in alternatives like Dragonfly or KeyDB.
+                                   </p>
+                                </div>
+                             </div>
+
+                             <div className="space-y-6">
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Broker Engine</label>
+                                   <div className="relative">
+                                      <select 
+                                         value={settings.brokerType} 
+                                         onChange={e => setSettings({...settings, brokerType: e.target.value})} 
+                                         className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-5 text-sm font-bold focus:ring-4 focus:ring-amber-500/10 outline-none transition-all appearance-none cursor-pointer" 
+                                      >
+                                         <option value="redis">Redis (Standard Engine)</option>
+                                         <option value="dragonfly">Dragonfly (Multi-threaded & High Throughput)</option>
+                                         <option value="keydb">KeyDB (Fast Drop-in Replacement)</option>
+                                         <option value="upstash">Upstash (Serverless Redis)</option>
+                                         <option value="postgres">PostgreSQL / Sync (Fallback for low-volume)</option>
+                                      </select>
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                         <ChevronRight className="w-4 h-4 rotate-90" />
+                                      </div>
+                                   </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Broker Connection URI</label>
+                                   <div className="relative group">
+                                      <Zap className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-amber-500 transition-colors" />
+                                      <input 
+                                         type="text" 
+                                         value={settings.redisUri} 
+                                         onChange={e => setSettings({...settings, redisUri: e.target.value})} 
+                                         placeholder={settings.brokerType === 'upstash' ? 'rediss://...' : 'redis://localhost:6379'}
+                                         disabled={settings.brokerType === 'postgres'}
+                                         className={`w-full bg-muted/50 border border-border rounded-2xl pl-14 pr-6 py-5 text-sm font-bold focus:ring-4 focus:ring-amber-500/10 outline-none transition-all ${settings.brokerType === 'postgres' ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                                      />
+                                   </div>
+                                   {settings.brokerType === 'postgres' && (
+                                     <p className="text-[10px] text-rose-500 font-bold ml-1 mt-2">Postgres fallback bypasses the external broker. Not recommended for files &gt; 5MB.</p>
+                                   )}
+                                </div>
+
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">MCP Protocol Server</label>
+                                   <div className="relative group">
+                                      <Cpu className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-amber-500 transition-colors" />
+                                      <input 
+                                         type="text" 
+                                         value={settings.mcpServerUrl} 
+                                         onChange={e => setSettings({...settings, mcpServerUrl: e.target.value})} 
+                                         placeholder="http://localhost:3012"
+                                         className="w-full bg-muted/50 border border-border rounded-2xl pl-14 pr-6 py-5 text-sm font-bold focus:ring-4 focus:ring-amber-500/10 outline-none transition-all" 
+                                      />
+                                   </div>
+                                </div>
+                             </div>
+                          </div>
+                       </section>
+
+                       <button 
+                         onClick={handleSaveBranding}
+                         disabled={loading}
+                         className="px-12 py-5 bg-amber-500 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-amber-500/30 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-3"
+                       >
+                          <Save className="w-5 h-5" />
+                          Deploy Infrastructure Update
+                       </button>
+                    </div>
+
+                    <div className="w-80 space-y-6">
+                       <div className="p-8 bg-card border border-border rounded-[40px] shadow-sm">
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Node Health Check</p>
+                          <div className="space-y-4">
+                             <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold">Redis Cluster</span>
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50"></span>
+                             </div>
+                             <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold">MCP Core</span>
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                             </div>
+                             <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold">Import Worker</span>
+                                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+            )}
 
            {activeTab === 'pipelines' && (
              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">

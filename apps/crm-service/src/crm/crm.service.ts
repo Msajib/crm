@@ -29,6 +29,7 @@ export class CrmService {
         source: dto.source,
         notes: dto.notes,
         customFields: dto.customFields || {},
+        rawPayload: dto.rawPayload || {},
         assignedTo: dto.assignedTo || userId,
         createdBy: userId,
       },
@@ -109,6 +110,7 @@ export class CrmService {
         ...(dto.customFields && { customFields: dto.customFields }),
         ...(dto.assignedTo && { assignedTo: dto.assignedTo }),
         ...(dto.status && { status: dto.status as any }),
+        ...(dto.rawPayload && { rawPayload: dto.rawPayload }),
       },
       include: { company: true },
     });

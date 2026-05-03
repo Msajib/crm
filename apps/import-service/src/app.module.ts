@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { ImportModule } from './import/import.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -44,5 +45,6 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     ImportModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

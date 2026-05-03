@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Param, UseInterceptors, UploadedFile, Headers, UseGuards, Request
+  Controller, Get, Post, Delete, Param, UseInterceptors, UploadedFile, Headers, UseGuards, Request, Body, BadRequestException, NotFoundException
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
@@ -19,13 +19,27 @@ export class ImportController {
     @Headers('x-tenant-id') tenantId: string,
     @Headers('x-user-id') userId: string,
     @UploadedFile() file: Express.Multer.File,
+    @Body('mapping') mapping?: string, // JSON string if from multipart
   ) {
-    return this.importService.createImportJob(tenantId, userId, file);
+    if (!tenantId) throw new BadRequestException('Missing x-tenant-id header');
+    const mappingObj = mapping ? JSON.parse(mapping) : null;
+    return this.importService.createImportJob(tenantId, userId, file, mappingObj);
+  }
+
+  @Post('analyze')
+  @ApiOperation({ summary: 'Analyze file for mapping preview' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  async analyzeFile(
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.importService.analyzeFile(file);
   }
 
   @Get('history')
   @ApiOperation({ summary: 'Get import history' })
   async getHistory(@Headers('x-tenant-id') tenantId: string) {
+    if (!tenantId) return [];
     return this.importService.getImportHistory(tenantId);
   }
 
@@ -45,5 +59,14 @@ export class ImportController {
     @Headers('x-tenant-id') tenantId: string
   ) {
     return this.importService.getJobReport(jobId, tenantId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete import job' })
+  async deleteJob(
+    @Param('id') jobId: string,
+    @Headers('x-tenant-id') tenantId: string
+  ) {
+    return this.importService.deleteImportJob(jobId, tenantId);
   }
 }

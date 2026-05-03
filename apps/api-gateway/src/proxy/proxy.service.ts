@@ -1,5 +1,7 @@
 import { Injectable, HttpException } from '@nestjs/common';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import * as http from 'http';
+import * as https from 'https';
 
 @Injectable()
 export class ProxyService {
@@ -9,7 +11,14 @@ export class ProxyService {
     if (!this.clients.has(baseUrl)) {
       this.clients.set(
         baseUrl,
-        axios.create({ baseURL: baseUrl, timeout: 30000 }),
+        axios.create({ 
+          baseURL: baseUrl, 
+          timeout: 60000,
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+          httpAgent: new http.Agent({ keepAlive: true }),
+          httpsAgent: new https.Agent({ keepAlive: true }),
+        }),
       );
     }
     return this.clients.get(baseUrl)!;
@@ -27,15 +36,19 @@ export class ProxyService {
       method: method as any,
       url: path,
       headers: {
-        'Content-Type': 'application/json',
         ...headers,
       },
     };
-    if (data && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-      config.data = data;
-    }
-    if (data && method.toUpperCase() === 'GET') {
-      config.params = data;
+    if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
+      if (data && data.body && Object.keys(data.body).length > 0) {
+        config.data = data.body;
+        // Let axios handle JSON transformation for parsed bodies
+      } else {
+        config.data = data; // Pass stream
+        config.transformRequest = [(data) => data]; // Don't transform stream
+      }
+    } else if (method.toUpperCase() === 'GET') {
+      config.params = data?.query || {};
     }
 
     try {
