@@ -110,7 +110,7 @@ function LeadsContent() {
       <div className="animate-fade-in space-y-8">
         <header className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-black text-foreground tracking-tight">Leads Management</h1>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">Leads Management</h1>
             <p className="text-muted-foreground mt-2 font-medium">Track and convert potential opportunities into customers.</p>
           </div>
           <div className="flex items-center space-x-4">
@@ -176,7 +176,7 @@ function LeadsContent() {
                 <tr>
                   <td colSpan={5} className="py-32 text-center">
                     <Target className="w-16 h-16 text-muted-foreground/20 mx-auto mb-6" />
-                    <h3 className="text-xl font-bold text-foreground">No Active Leads</h3>
+                    <h3 className="text-base font-bold text-foreground">No Active Leads</h3>
                     <p className="text-muted-foreground text-sm max-w-sm mx-auto">Import or capture leads from your social channels and website.</p>
                   </td>
                 </tr>
@@ -248,7 +248,7 @@ function LeadsContent() {
            <div className="glass-premium w-full max-w-2xl rounded-[50px] border border-border p-12 shadow-2xl animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center mb-10">
                  <div>
-                    <h2 className="text-3xl font-black text-foreground tracking-tight">Convert to Opportunity</h2>
+                    <h2 className="text-xl font-black text-foreground tracking-tight">Convert to Opportunity</h2>
                     <p className="text-sm text-muted-foreground mt-2 font-medium italic">Create a deal in your sales pipeline for {selectedLead?.firstName}.</p>
                  </div>
                  <button onClick={() => setShowConvertModal(false)} className="p-4 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>

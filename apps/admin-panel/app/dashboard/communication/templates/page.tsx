@@ -96,7 +96,7 @@ export default function EmailTemplates() {
                  <ChevronLeft className="w-5 h-5" />
               </Link>
               <div>
-                 <h1 className="text-3xl font-black text-foreground mb-1 tracking-tight">Email Templates</h1>
+                 <h1 className="text-2xl font-black text-foreground mb-1 tracking-tight">Email Templates</h1>
                  <p className="text-muted-foreground text-sm font-medium italic">Create and manage reusable email templates for your brand.</p>
               </div>
            </div>
@@ -120,7 +120,7 @@ export default function EmailTemplates() {
                 <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6">
                    <Layout className="w-10 h-10 text-muted-foreground/30" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">No Templates Found</h3>
+                <h3 className="text-base font-bold text-foreground mb-2">No Templates Found</h3>
                 <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8">Ready to automate your emails? Start by creating your first template.</p>
                 <button 
                   onClick={() => setIsEditorOpen(true)}
@@ -163,7 +163,7 @@ export default function EmailTemplates() {
            <div className="glass-premium w-full max-w-4xl rounded-[50px] border border-border p-12 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
               <div className="flex justify-between items-center mb-10">
                  <div>
-                    <h2 className="text-3xl font-black text-foreground tracking-tight">{editingTemplate ? 'Edit Template' : 'New Template'}</h2>
+                    <h2 className="text-xl font-black text-foreground tracking-tight">{editingTemplate ? 'Edit Template' : 'New Template'}</h2>
                     <p className="text-sm text-muted-foreground mt-2 font-medium">Use {"{{name}}"} for personalization in subject and body.</p>
                  </div>
                  <button onClick={() => setIsEditorOpen(false)} className="p-4 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>

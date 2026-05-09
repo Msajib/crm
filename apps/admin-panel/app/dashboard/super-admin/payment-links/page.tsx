@@ -89,7 +89,7 @@ export default function PaymentLinksPage() {
       <div className="animate-fade-in space-y-8">
         <header className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-black text-foreground tracking-tight">Payment Links</h1>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">Payment Links</h1>
             <p className="text-muted-foreground mt-2 font-medium">Create secure, shareable checkout links for custom plans or one-time sales.</p>
           </div>
           <button 
@@ -125,7 +125,7 @@ export default function PaymentLinksPage() {
                 <tr>
                   <td colSpan={6} className="py-32 text-center">
                     <LinkIcon className="w-16 h-16 text-muted-foreground/20 mx-auto mb-6" />
-                    <h3 className="text-xl font-bold text-foreground">No Payment Links</h3>
+                    <h3 className="text-base font-bold text-foreground">No Payment Links</h3>
                     <p className="text-muted-foreground text-sm">Generate your first payment link to share with prospects.</p>
                   </td>
                 </tr>
@@ -187,7 +187,7 @@ export default function PaymentLinksPage() {
         <div className="fixed inset-0 bg-background/95 backdrop-blur-xl z-[300] flex items-center justify-center p-4">
           <div className="glass-premium w-full max-w-2xl rounded-[40px] border border-border p-10 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black">Create Payment Link</h2>
+              <h2 className="text-xl font-black">Create Payment Link</h2>
               <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-muted rounded-xl"><X className="w-5 h-5" /></button>
             </div>
             

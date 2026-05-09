@@ -94,7 +94,7 @@ export default function SuperAdminModulesSettings() {
         <header className="relative py-12 px-8 overflow-hidden rounded-[40px] bg-card border border-border">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] rounded-full -mr-20 -mt-20"></div>
           <div className="relative z-10">
-            <h1 className="text-4xl font-black text-foreground mb-3 flex items-center">
+            <h1 className="text-2xl font-black text-foreground mb-3 flex items-center">
               <ShieldCheck className="w-10 h-10 mr-4 text-primary" />
               Service Control Center
             </h1>
@@ -137,7 +137,7 @@ export default function SuperAdminModulesSettings() {
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-foreground mb-2">{module.name}</h3>
+                    <h3 className="text-base font-bold text-foreground mb-2">{module.name}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{module.desc}</p>
                   </div>
 

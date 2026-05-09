@@ -265,7 +265,7 @@ export default function PipelineSettings() {
                <div className="w-10 h-10 bg-indigo-500/10 text-indigo-500 rounded-xl flex items-center justify-center">
                   <GitBranch className="w-6 h-6" />
                </div>
-               <h1 className="text-3xl font-black text-foreground tracking-tight">Revenue Pipelines</h1>
+               <h1 className="text-2xl font-black text-foreground tracking-tight">Revenue Pipelines</h1>
             </div>
             <p className="text-muted-foreground text-sm font-medium">Define and manage your sales stages and conversion workflows.</p>
           </div>
@@ -288,7 +288,7 @@ export default function PipelineSettings() {
                 <Target className="w-10 h-10" />
              </div>
              <div>
-                <h3 className="text-xl font-black text-foreground">No Pipelines Detected</h3>
+                <h3 className="text-base font-black text-foreground">No Pipelines Detected</h3>
                 <p className="text-muted-foreground text-sm max-w-md mx-auto mt-2">You must create at least one pipeline to start tracking deals and managing your revenue flow.</p>
              </div>
              <button 
@@ -314,7 +314,7 @@ export default function PipelineSettings() {
                 <div className="space-y-6">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-xl font-black text-foreground">{pipeline.name}</h3>
+                      <h3 className="text-base font-black text-foreground">{pipeline.name}</h3>
                       <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{pipeline.stages?.length || 0} Stages • {pipeline._count?.deals || 0} Active Deals</p>
                     </div>
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

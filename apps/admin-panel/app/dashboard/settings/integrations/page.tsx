@@ -229,7 +229,7 @@ export default function IntegrationSettings() {
       <div className="animate-fade-in space-y-10 pb-20">
         <header className="flex justify-between items-end">
           <div>
-            <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">API Infrastructure</h1>
+            <h1 className="text-2xl font-black text-foreground mb-2 tracking-tight">API Infrastructure</h1>
             <p className="text-muted-foreground text-sm font-medium">Connect and authenticate with external communication providers.</p>
           </div>
           <div className="flex bg-muted p-1 rounded-2xl border border-border">
@@ -255,7 +255,7 @@ export default function IntegrationSettings() {
                        <Phone className="w-8 h-8" />
                     </div>
                     <div>
-                       <h2 className="text-2xl font-black text-foreground">Voice Infrastructure</h2>
+                       <h2 className="text-xl font-black text-foreground">Voice Infrastructure</h2>
                        <p className="text-sm text-muted-foreground">Manage global VoIP and localized SIP trunking providers.</p>
                     </div>
                  </div>
@@ -409,7 +409,7 @@ export default function IntegrationSettings() {
                        <Mail className="w-8 h-8" />
                     </div>
                     <div>
-                       <h2 className="text-2xl font-black text-foreground">Email Infrastructure</h2>
+                       <h2 className="text-xl font-black text-foreground">Email Infrastructure</h2>
                        <p className="text-sm text-muted-foreground">Configure SMTP or API-based delivery for your communications.</p>
                     </div>
                  </div>
@@ -545,7 +545,7 @@ export default function IntegrationSettings() {
                          <Smartphone className="w-8 h-8" />
                       </div>
                       <div>
-                         <h2 className="text-2xl font-black text-foreground">WhatsApp Business Ecosystem</h2>
+                         <h2 className="text-xl font-black text-foreground">WhatsApp Business Ecosystem</h2>
                          <p className="text-sm text-muted-foreground font-medium italic">Select your preferred integration mode for automated messaging.</p>
                       </div>
                    </div>

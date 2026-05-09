@@ -96,7 +96,7 @@ export default function EmailSettings() {
       <div className="animate-fade-in space-y-10 max-w-5xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black text-foreground tracking-tight">Email Infrastructure</h1>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">Email Infrastructure</h1>
             <p className="text-muted-foreground text-sm font-medium">Configure your outbound email service for notifications and marketing.</p>
           </div>
           <div className="flex items-center space-x-3 px-4 py-2 bg-primary/10 text-primary rounded-2xl border border-primary/20 shadow-inner">

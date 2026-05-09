@@ -320,7 +320,7 @@ export default function UserManagementPage() {
       <div className="animate-fade-in space-y-8">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-black text-foreground mb-2 text-gradient">Team & Permissions</h1>
+            <h1 className="text-2xl font-black text-foreground mb-2 text-gradient">Team & Permissions</h1>
             <p className="text-muted-foreground font-medium">Control access and manage your workspace operatives.</p>
           </div>
           <div className="flex bg-muted/50 p-1.5 rounded-2xl border border-border self-start">
@@ -485,7 +485,7 @@ export default function UserManagementPage() {
                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                       <Shield className="w-24 h-24" />
                    </div>
-                   <h3 className="text-xl font-black text-foreground mb-2 flex items-center gap-2">
+                   <h3 className="text-base font-black text-foreground mb-2 flex items-center gap-2">
                      {role.name}
                      {role.name === 'Admin' && <CheckCircle className="w-4 h-4 text-primary" />}
                    </h3>
@@ -543,7 +543,7 @@ export default function UserManagementPage() {
                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
                   <Users className="w-8 h-8 text-primary" />
                </div>
-               <h2 className="text-3xl font-black text-foreground">Deploy New Operative</h2>
+               <h2 className="text-xl font-black text-foreground">Deploy New Operative</h2>
                <p className="text-sm text-muted-foreground mt-2 font-medium">Assign credentials and security clearance.</p>
             </div>
 
@@ -636,7 +636,7 @@ export default function UserManagementPage() {
                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
                   <Edit2 className="w-6 h-6 text-primary" />
                </div>
-               <h2 className="text-3xl font-black text-foreground">Update Operative</h2>
+               <h2 className="text-xl font-black text-foreground">Update Operative</h2>
                <p className="text-sm text-muted-foreground mt-2 font-medium">Modify credentials and clearance levels.</p>
             </div>
 
@@ -717,7 +717,7 @@ export default function UserManagementPage() {
                </button>
             </div>
             
-            <h2 className="text-3xl font-black text-foreground">Reset Credentials</h2>
+            <h2 className="text-xl font-black text-foreground">Reset Credentials</h2>
             <p className="text-sm text-muted-foreground mt-2 font-medium mb-8">Establish a new security access key for this operative.</p>
 
             <form onSubmit={handleResetPassword} className="space-y-6">
@@ -749,7 +749,7 @@ export default function UserManagementPage() {
                     <Lock className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-foreground">Create Security Role</h2>
+                    <h2 className="text-xl font-black text-foreground">Create Security Role</h2>
                     <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">Configure Access Matrix</p>
                   </div>
                </div>
@@ -828,7 +828,7 @@ export default function UserManagementPage() {
                  <Edit2 className="w-6 h-6" />
                </div>
                <div>
-                 <h2 className="text-2xl font-black text-foreground">Modify Security Role</h2>
+                 <h2 className="text-xl font-black text-foreground">Modify Security Role</h2>
                  <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">Update Access Matrix</p>
                </div>
             </div>

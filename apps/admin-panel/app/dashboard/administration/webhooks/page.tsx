@@ -133,7 +133,7 @@ function WebhooksContent() {
       <div className="animate-fade-in space-y-10 pb-20">
         <header className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-black text-foreground mb-2 tracking-tight flex items-center">
+            <h1 className="text-2xl font-black text-foreground mb-2 tracking-tight flex items-center">
               <WebhookIcon className="w-8 h-8 mr-4 text-primary" />
               Webhook Infrastructure
             </h1>
@@ -160,7 +160,7 @@ function WebhooksContent() {
                    <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                       <Terminal className="w-10 h-10 text-muted-foreground/30" />
                    </div>
-                   <h3 className="text-xl font-bold text-foreground mb-2">No Active Webhooks</h3>
+                   <h3 className="text-base font-bold text-foreground mb-2">No Active Webhooks</h3>
                    <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8 font-medium">Connect your CRM to external services like Slack, Zapier, or custom APIs.</p>
                    <button onClick={() => setShowAddModal(true)} className="bg-primary/10 text-primary px-10 py-4 rounded-2xl font-black hover:bg-primary hover:text-white transition-all">Setup First Integration</button>
                 </div>
@@ -252,7 +252,7 @@ function WebhooksContent() {
           <div className="glass-premium w-full max-w-2xl rounded-[50px] border border-border p-12 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center mb-10">
                <div>
-                  <h2 className="text-3xl font-black text-foreground tracking-tight">Register Webhook</h2>
+                  <h2 className="text-xl font-black text-foreground tracking-tight">Register Webhook</h2>
                   <p className="text-sm text-muted-foreground mt-2 font-medium italic">Configure real-time event streaming to your external services.</p>
                </div>
                <button onClick={() => setShowAddModal(false)} className="p-4 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>
@@ -306,7 +306,7 @@ function WebhooksContent() {
           <div className="glass-premium w-full max-w-2xl rounded-[50px] border border-border p-12 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-8">
                <div>
-                  <h2 className="text-2xl font-black text-foreground">Payload Blueprint</h2>
+                  <h2 className="text-xl font-black text-foreground">Payload Blueprint</h2>
                   <p className="text-xs text-muted-foreground mt-2 font-mono">Example structure for <code>{inspectPayload.events?.[0] || 'any'}</code> event</p>
                </div>
                <button onClick={() => setInspectPayload(null)} className="p-4 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>

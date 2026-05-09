@@ -46,7 +46,7 @@ function MCPContent() {
       <div className="animate-fade-in space-y-10 pb-20">
         <header className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-black text-foreground mb-2 text-gradient flex items-center">
+            <h1 className="text-2xl font-black text-foreground mb-2 text-gradient flex items-center">
               <Cpu className="w-8 h-8 mr-3 text-primary" />
               MCP Server Configuration
             </h1>

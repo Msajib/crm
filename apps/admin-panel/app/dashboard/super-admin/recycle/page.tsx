@@ -62,7 +62,7 @@ export default function RecycleBinPage() {
                <Link href="/dashboard/super-admin/tenants" className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground group">
                   <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                </Link>
-               <h1 className="text-3xl font-black text-foreground text-gradient">Recycle Bin</h1>
+               <h1 className="text-2xl font-black text-foreground text-gradient">Recycle Bin</h1>
             </div>
             <p className="text-muted-foreground">Items in the recycle bin can be restored to the active ecosystem or permanently deleted.</p>
           </div>
@@ -150,7 +150,7 @@ export default function RecycleBinPage() {
               <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
                  <AlertCircle className="w-10 h-10" />
               </div>
-              <h2 className="text-2xl font-black mb-2 text-red-500">Permanent Delete?</h2>
+              <h2 className="text-xl font-black mb-2 text-red-500">Permanent Delete?</h2>
               <p className="text-muted-foreground text-sm mb-8">This action is irreversible. All data for <strong>{showConfirmDelete.name}</strong> will be wiped from the system.</p>
               <div className="flex flex-col space-y-3">
                  <button onClick={handlePermanentDelete} className="w-full py-4 bg-red-500 text-white rounded-2xl font-black text-sm shadow-xl shadow-red-500/25 hover:opacity-90 transition-all">Destroy Permanently</button>

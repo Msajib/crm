@@ -125,7 +125,7 @@ export default function CommunicationMessages() {
       <div className="animate-fade-in h-[calc(100vh-160px)] flex gap-8">
          <aside className="w-80 flex flex-col space-y-6">
             <header>
-               <h1 className="text-3xl font-black text-foreground mb-4">Messages</h1>
+               <h1 className="text-2xl font-black text-foreground mb-4">Messages</h1>
                <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input type="text" placeholder="Search chats..." className="w-full bg-muted border border-border rounded-2xl pl-12 pr-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />

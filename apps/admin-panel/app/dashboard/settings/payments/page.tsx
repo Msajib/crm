@@ -170,7 +170,7 @@ function PaymentContent() {
       <div className="animate-fade-in space-y-10 max-w-7xl mx-auto">
         <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black text-foreground tracking-tight">Financial Infrastructure</h1>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">Financial Infrastructure</h1>
             <p className="text-muted-foreground text-sm font-medium max-w-2xl">Connect enterprise-grade payment gateways to scale your global revenue operations.</p>
           </div>
           <div className="flex items-center gap-3">
@@ -277,7 +277,7 @@ function PaymentContent() {
                       <LockKeyhole className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-foreground capitalize">{settingsModal} Setup</h2>
+                    <h2 className="text-xl font-black text-foreground capitalize">{settingsModal} Setup</h2>
                     <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Production Credentials</p>
                   </div>
                </div>

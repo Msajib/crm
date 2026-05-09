@@ -49,7 +49,7 @@ function AutomationContent() {
       <div className="animate-fade-in space-y-10 pb-20">
         <header className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-black text-foreground mb-2 text-gradient flex items-center">
+            <h1 className="text-2xl font-black text-foreground mb-2 text-gradient flex items-center">
               <Workflow className="w-8 h-8 mr-3 text-primary" />
               Automation Engine
             </h1>
@@ -150,7 +150,7 @@ function AutomationContent() {
                     <Zap className="w-6 h-6" />
                  </div>
                  <div>
-                    <h2 className="text-2xl font-black text-foreground">Visual Workflow Wizard</h2>
+                    <h2 className="text-xl font-black text-foreground">Visual Workflow Wizard</h2>
                     <p className="text-xs text-muted-foreground">Building: New Lead Follow-up</p>
                  </div>
               </div>

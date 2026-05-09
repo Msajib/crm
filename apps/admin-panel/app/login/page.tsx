@@ -81,7 +81,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background" suppressHydrationWarning>
       {/* Left Pane - Image/Branding */}
       <div className="hidden md:flex md:w-1/2 bg-muted relative overflow-hidden p-12 flex-col justify-between items-start border-r border-border/50">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background z-0" />
@@ -186,12 +186,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-muted-foreground">
+          <div className="mt-8 text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Link href="/register" className="font-medium text-primary hover:underline underline-offset-4">
               Request access
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>

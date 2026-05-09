@@ -19,7 +19,8 @@ import {
   ChevronUp,
   Info,
   Server,
-  X
+  X,
+  Mic
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
@@ -29,6 +30,7 @@ const AI_PROVIDERS = [
   { id: 'google', name: 'Google Gemini', description: 'Multimodal excellence with massive context windows.', icon: Brain, color: 'text-blue-500 bg-blue-500/10', defaultModel: 'gemini-1.5-pro' },
   { id: 'anthropic', name: 'Anthropic (Claude)', description: 'Specialized in safety, long-form writing, and coding.', icon: ShieldCheck, color: 'text-orange-500 bg-orange-500/10', defaultModel: 'claude-3-5-sonnet' },
   { id: 'grok', name: 'xAI (Grok)', description: 'Real-time knowledge access and witty responses.', icon: Zap, color: 'text-indigo-500 bg-indigo-500/10', defaultModel: 'grok-1' },
+  { id: 'elevenlabs', name: 'ElevenLabs (Voice)', description: 'Industry-leading text-to-speech engine for conversational AI.', icon: Mic, color: 'text-purple-500 bg-purple-500/10', defaultModel: 'eleven_multilingual_v2' },
 ];
 
 export default function AISettingsPage() {
@@ -97,7 +99,7 @@ export default function AISettingsPage() {
       <div className="animate-fade-in space-y-10 max-w-7xl mx-auto">
         <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black text-foreground tracking-tight">AI Infrastructure</h1>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">AI Infrastructure</h1>
             <p className="text-muted-foreground text-sm font-medium max-w-2xl">Manage enterprise LLM keys to power your Sales Agent, Lead Scoring, and Automations.</p>
           </div>
           <div className="flex items-center gap-3">
@@ -200,7 +202,7 @@ export default function AISettingsPage() {
                       <Bot className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-foreground capitalize">{settingsModal} Config</h2>
+                    <h2 className="text-xl font-black text-foreground capitalize">{settingsModal} Config</h2>
                     <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">LLM Integration</p>
                   </div>
                </div>
@@ -226,6 +228,7 @@ export default function AISettingsPage() {
                      {settingsModal === 'google' && <p>Go to aistudio.google.com and create a free API key for Gemini.</p>}
                      {settingsModal === 'anthropic' && <p>Log in to console.anthropic.com and generate a key from the Settings.</p>}
                      {settingsModal === 'grok' && <p>Visit x.ai/api and follow the instructions to obtain your Grok API key.</p>}
+                     {settingsModal === 'elevenlabs' && <p>Go to elevenlabs.io, sign in, click your profile icon, and view your API key.</p>}
                   </div>
                )}
 

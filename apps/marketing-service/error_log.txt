@@ -22,3 +22,131 @@ TypeError: Cannot read properties of undefined (reading 'getCampaigns')
     at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:46:28
     at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-proxy.js:9:17
 
+[2026-05-03T06:49:44.754Z] POST /marketing/campaigns
+PrismaClientValidationError: 
+Invalid `this.prisma.campaign.create()` invocation in
+C:\Users\Elitebook\Desktop\Projects\CRM\apps\marketing-service\dist\marketing\marketing.service.js:343:37
+
+  340     }
+  341 }
+  342 async createCampaign(tenantId, data) {
+→ 343     return this.prisma.campaign.create({
+            data: {
+              tenantId: "acme-corp-1",
+              description: null,
+              type: "EMAIL",
+              status: "PENDING",
+              scheduledAt: new Date("2026-05-03T06:49:44.683Z"),
+              templateId: null,
+              leadIds: [
+                "089dbebc-2aca-4352-8ee8-7d166c9a78c6"
+              ],
+          +   name: String
+            }
+          })
+
+Argument `name` must not be null.
+    at Nn (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:33:1363)
+    at ei.handleRequestError (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6911)
+    at ei.handleAndLogRequestError (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6593)
+    at ei.request (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6300)
+    at async a (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:134:9551)
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-05-09T12:33:36.941Z] POST /marketing/campaigns
+PrismaClientValidationError: 
+Invalid `this.prisma.campaign.create()` invocation in
+C:\Users\Elitebook\Desktop\Projects\CRM\apps\marketing-service\dist\marketing\marketing.service.js:343:37
+
+  340     }
+  341 }
+  342 async createCampaign(tenantId, data) {
+→ 343     return this.prisma.campaign.create({
+            data: {
+              tenantId: "acme-corp-1",
+              description: null,
+              type: "EMAIL",
+              status: "PENDING",
+              scheduledAt: new Date("2026-05-09T12:33:36.698Z"),
+              templateId: null,
+              leadIds: [
+                "089dbebc-2aca-4352-8ee8-7d166c9a78c6"
+              ],
+          +   name: String
+            }
+          })
+
+Argument `name` must not be null.
+    at Nn (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:33:1363)
+    at ei.handleRequestError (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6911)
+    at ei.handleAndLogRequestError (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6593)
+    at ei.request (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6300)
+    at async a (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:134:9551)
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-05-09T12:37:27.293Z] POST /marketing/campaigns
+PrismaClientValidationError: 
+Invalid `this.prisma.campaign.create()` invocation in
+C:\Users\Elitebook\Desktop\Projects\CRM\apps\marketing-service\dist\marketing\marketing.service.js:343:37
+
+  340     }
+  341 }
+  342 async createCampaign(tenantId, data) {
+→ 343     return this.prisma.campaign.create({
+            data: {
+              tenantId: "acme-corp-1",
+              description: null,
+              type: "EMAIL",
+              status: "PENDING",
+              scheduledAt: new Date("2026-05-09T12:37:27.214Z"),
+              templateId: null,
+              leadIds: [
+                "089dbebc-2aca-4352-8ee8-7d166c9a78c6"
+              ],
+          +   name: String
+            }
+          })
+
+Argument `name` must not be null.
+    at Nn (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:33:1363)
+    at ei.handleRequestError (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6911)
+    at ei.handleAndLogRequestError (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6593)
+    at ei.request (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6300)
+    at async a (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:134:9551)
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-05-09T12:58:57.773Z] POST /marketing/campaigns
+PrismaClientValidationError: 
+Invalid `this.prisma.campaign.create()` invocation in
+C:\Users\Elitebook\Desktop\Projects\CRM\apps\marketing-service\dist\marketing\marketing.service.js:343:37
+
+  340     }
+  341 }
+  342 async createCampaign(tenantId, data) {
+→ 343     return this.prisma.campaign.create({
+            data: {
+              tenantId: "acme-corp-1",
+              description: null,
+              type: "EMAIL",
+              status: "PENDING",
+              scheduledAt: new Date("2026-05-09T12:58:57.576Z"),
+              templateId: undefined,
+              leadIds: [
+                "089dbebc-2aca-4352-8ee8-7d166c9a78c6"
+              ],
+          +   name: String
+            }
+          })
+
+Argument `name` must not be null.
+    at Nn (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:33:1363)
+    at ei.handleRequestError (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6911)
+    at ei.handleAndLogRequestError (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6593)
+    at ei.request (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:125:6300)
+    at async a (C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@prisma\marketing-client\runtime\library.js:134:9551)
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Elitebook\Desktop\Projects\CRM\node_modules\@nestjs\core\router\router-proxy.js:9:17
+

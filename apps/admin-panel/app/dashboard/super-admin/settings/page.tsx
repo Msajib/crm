@@ -116,7 +116,15 @@ function SettingsContent() {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [activeTab, setActiveTab] = useState<'profile' | 'branding' | 'pricing' | 'templates' | 'pipelines' | 'modules' | 'stats' | 'subscription' | 'domain' | 'infrastructure'>((tabParam as any) || 'branding');
+  const [activeTab, setActiveTab] = useState<'profile' | 'branding' | 'pricing' | 'sso' | 'templates' | 'pipelines' | 'modules' | 'stats' | 'subscription' | 'domain' | 'infrastructure'>((tabParam as any) || 'branding');
+
+  // SSO Options State
+  const [ssoProviders, setSsoProviders] = useState({
+    google: true,
+    github: true,
+    linkedin: false,
+    microsoft: false
+  });
 
   // Domain State
   const [domainSettings, setDomainSettings] = useState({
@@ -252,6 +260,11 @@ function SettingsContent() {
         setEnabledModules(allModuleIds.filter(id => !disabled.includes(id)));
       } else {
         setEnabledModules(allModuleIds);
+      }
+
+      const savedSso = localStorage.getItem('crm_sso_providers');
+      if (savedSso) {
+        setSsoProviders(JSON.parse(savedSso));
       }
 
       const savedPrefs = localStorage.getItem('dashboard_stats_prefs');
@@ -471,6 +484,12 @@ function SettingsContent() {
     setTimeout(() => window.location.reload(), 1000);
   };
 
+  // --- SSO Handlers ---
+  const handleSaveSso = () => {
+    localStorage.setItem('crm_sso_providers', JSON.stringify(ssoProviders));
+    toast.success('SSO configuration saved!');
+  };
+
   // --- Stats Handlers ---
   const handleSaveStats = () => {
     localStorage.setItem('dashboard_stats_prefs', JSON.stringify(preferences));
@@ -531,6 +550,7 @@ function SettingsContent() {
     { id: 'branding', label: 'Identity', icon: Palette },
     ...(isSuperAdmin ? [
       { id: 'pricing', label: 'Pricing', icon: CreditCard },
+      { id: 'sso', label: 'SSO Logins', icon: Globe },
       { id: 'templates', label: 'Email', icon: Mail },
       { id: 'modules', label: 'Modules', icon: ShieldCheck },
       { id: 'pipelines', label: 'Pipelines', icon: GitBranch },
@@ -546,7 +566,7 @@ function SettingsContent() {
     <div className="animate-fade-in max-w-6xl mx-auto space-y-10 pb-20">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-4xl font-black text-foreground tracking-tight">System Control</h1>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">System Control</h1>
             <p className="text-muted-foreground font-medium">Global configuration for the entire CRM infrastructure.</p>
           </div>
           
@@ -594,7 +614,7 @@ function SettingsContent() {
                 )}
 
                 <section className="space-y-8">
-                   <h3 className="text-2xl font-black text-foreground flex items-center gap-4">
+                   <h3 className="text-lg font-black text-foreground flex items-center gap-4">
                       <span className="w-1.5 h-8 bg-purple-500 rounded-full shadow-lg shadow-purple-500/20" />
                       Personal Profile
                    </h3>
@@ -652,7 +672,7 @@ function SettingsContent() {
                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
                         <div className="space-y-10">
                            <section className="space-y-6">
-                              <h3 className="text-2xl font-black text-foreground flex items-center gap-4">
+                              <h3 className="text-lg font-black text-foreground flex items-center gap-4">
                                  <span className="w-1.5 h-8 bg-primary rounded-full shadow-lg shadow-primary/20" />
                                  Global Identity
                               </h3>
@@ -681,7 +701,7 @@ function SettingsContent() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
                      <div className="space-y-10">
                         <section className="space-y-6">
-                           <h3 className="text-2xl font-black text-foreground flex items-center gap-4">
+                           <h3 className="text-lg font-black text-foreground flex items-center gap-4">
                               <span className="w-1.5 h-8 bg-primary rounded-full shadow-lg shadow-primary/20" />
                               Identity Branding
                            </h3>
@@ -724,7 +744,7 @@ function SettingsContent() {
            {activeTab === 'pricing' && (
              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
                 <div className="flex justify-between items-center">
-                   <h2 className="text-3xl font-black">Subscription Tiers</h2>
+                   <h2 className="text-xl font-black">Subscription Tiers</h2>
                    <button onClick={handleSavePricing} className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20">PUBLISH PLANS</button>
                 </div>
                 <div className="space-y-6">
@@ -746,10 +766,42 @@ function SettingsContent() {
              </div>
            )}
 
+           {activeTab === 'sso' && (
+             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
+                <div className="flex justify-between items-center">
+                   <div>
+                      <h2 className="text-xl font-black">SSO Providers</h2>
+                      <p className="text-sm text-muted-foreground font-medium">Configure which social logins are available on the registration page.</p>
+                   </div>
+                   <button onClick={handleSaveSso} className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20">SAVE CONFIG</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                   {Object.entries(ssoProviders).map(([provider, enabled]) => (
+                     <div key={provider} className="p-6 bg-muted/20 border border-border rounded-2xl flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 bg-background rounded-xl border border-border flex items-center justify-center font-bold capitalize">
+                             {provider.charAt(0)}
+                           </div>
+                           <div>
+                             <h4 className="font-bold capitalize text-foreground">{provider}</h4>
+                           </div>
+                        </div>
+                        <button 
+                           onClick={() => setSsoProviders(prev => ({...prev, [provider]: !enabled}))}
+                           className={`w-12 h-6 rounded-full transition-colors relative ${enabled ? 'bg-primary' : 'bg-muted border border-border'}`}
+                        >
+                           <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${enabled ? 'left-7' : 'left-1'}`} />
+                        </button>
+                     </div>
+                   ))}
+                </div>
+             </div>
+           )}
+
            {activeTab === 'templates' && (
              <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
                 <div className="flex justify-between items-center">
-                   <h2 className="text-3xl font-black">Email Templates</h2>
+                   <h2 className="text-xl font-black">Email Templates</h2>
                    <button onClick={() => { setEditingTemplate(null); setNewTemplate({ name: '', subject: '', content: '', category: 'GENERAL' }); setShowTemplateModal(true); }} className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2"><Plus className="w-4 h-4" /> CREATE TEMPLATE</button>
                 </div>
                 {fetching ? (
@@ -761,7 +813,7 @@ function SettingsContent() {
                     {customTemplates.map(t => (
                       <div key={t.id} onClick={() => handleEditTemplate(t)} className="p-8 bg-muted/20 border border-border rounded-[40px] hover:border-primary/40 transition-all cursor-pointer group">
                           <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-xl font-black">{t.name || 'Untitled Template'}</h3>
+                            <h3 className="text-base font-black">{t.name || 'Untitled Template'}</h3>
                             <div className="flex items-center gap-2">
                               {t.isSystem && <span className="bg-primary/10 text-primary text-[8px] font-black uppercase px-2 py-1 rounded">System</span>}
                               <Edit3 className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -780,7 +832,7 @@ function SettingsContent() {
              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
                 <div className="flex justify-between items-center">
                    <div>
-                      <h2 className="text-3xl font-black">Service Architecture</h2>
+                      <h2 className="text-xl font-black">Service Architecture</h2>
                       <p className="text-sm text-muted-foreground font-medium">Toggle core features availability across the platform.</p>
                    </div>
                    <button onClick={handleSaveModules} className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20">SAVE ARCHITECTURE</button>
@@ -805,7 +857,7 @@ function SettingsContent() {
                  <div className="flex justify-between items-start gap-8">
                     <div className="flex-1 space-y-10">
                        <section className="space-y-6">
-                          <h3 className="text-2xl font-black text-foreground flex items-center gap-4">
+                          <h3 className="text-lg font-black text-foreground flex items-center gap-4">
                              <span className="w-1.5 h-8 bg-amber-500 rounded-full shadow-lg shadow-amber-500/20" />
                              System Infrastructure
                           </h3>
@@ -915,7 +967,7 @@ function SettingsContent() {
              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
                 <div className="flex justify-between items-center">
                    <div>
-                      <h2 className="text-3xl font-black text-foreground mb-2 flex items-center">
+                      <h2 className="text-xl font-black text-foreground mb-2 flex items-center">
                          <GitBranch className="w-8 h-8 mr-4 text-primary" />
                          Deal Pipelines
                       </h2>
@@ -936,7 +988,7 @@ function SettingsContent() {
                    ) : pipelines.length === 0 ? (
                      <div className="glass-card p-20 text-center rounded-[40px] border border-border border-dashed">
                         <Layout className="w-16 h-16 text-muted-foreground/30 mx-auto mb-6" />
-                        <h3 className="text-xl font-bold text-foreground">No pipelines defined</h3>
+                        <h3 className="text-base font-bold text-foreground">No pipelines defined</h3>
                         <p className="text-muted-foreground mt-2 max-w-xs mx-auto text-sm">Create your first sales pipeline to start tracking opportunities.</p>
                      </div>
                    ) : (
@@ -948,7 +1000,7 @@ function SettingsContent() {
                                    <Target className="w-6 h-6 text-primary" />
                                 </div>
                                 <div>
-                                   <h3 className="text-xl font-black text-foreground flex items-center">
+                                   <h3 className="text-base font-black text-foreground flex items-center">
                                      {p.name}
                                      {p.isDefault && <span className="ml-3 px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-widest rounded-md">Default</span>}
                                    </h3>
@@ -993,7 +1045,7 @@ function SettingsContent() {
              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center justify-center h-[500px] text-center space-y-8">
                 <div className="w-24 h-24 bg-primary/10 rounded-[40px] flex items-center justify-center relative"><CreditCard className="w-10 h-10 text-primary" /></div>
                 <div className="space-y-3">
-                   <h2 className="text-3xl font-black">Billing & Subscriptions</h2>
+                   <h2 className="text-xl font-black">Billing & Subscriptions</h2>
                    <p className="text-muted-foreground max-w-sm mx-auto font-medium">Manage your current plan, view billing history, and upgrade workspace capacity.</p>
                 </div>
                 <button onClick={() => window.location.href = '/dashboard/settings/subscription'} className="px-10 py-5 bg-primary text-white rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-2xl shadow-primary/20">Open Billing Dashboard</button>
@@ -1003,7 +1055,7 @@ function SettingsContent() {
            {activeTab === 'domain' && (
              <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
                 <section className="space-y-6">
-                   <h3 className="text-2xl font-black text-foreground flex items-center gap-4">
+                   <h3 className="text-lg font-black text-foreground flex items-center gap-4">
                       <span className="w-1.5 h-8 bg-primary rounded-full shadow-lg shadow-primary/20" />
                       Domain Configuration
                    </h3>
@@ -1089,7 +1141,7 @@ function SettingsContent() {
              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
                 <div className="flex justify-between items-center">
                    <div>
-                      <h2 className="text-3xl font-black">Dashboard Canvas</h2>
+                      <h2 className="text-xl font-black">Dashboard Canvas</h2>
                       <p className="text-sm text-muted-foreground font-medium">Define the default visibility of analytics widgets.</p>
                    </div>
                    <button onClick={handleSaveStats} className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20">SAVE PREFERENCES</button>
@@ -1126,6 +1178,26 @@ function SettingsContent() {
             <div className="space-y-2">
                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Content</label>
                <RichTextEditor value={newTemplate.content || ''} onChange={(html: string) => setNewTemplate({...newTemplate, content: html})} />
+            </div>
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-2">
+               <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5" /> Available Dynamic Tags
+               </p>
+               <div className="flex flex-wrap gap-2">
+                  {['{{lead.first_name}}', '{{lead.last_name}}', '{{lead.email}}', '{{lead.phone}}', '{{lead.company}}'].map(tag => (
+                     <span 
+                        key={tag} 
+                        className="px-2.5 py-1.5 bg-background rounded-lg text-[10px] font-mono font-bold border border-border shadow-sm cursor-pointer hover:border-primary hover:text-primary transition-all active:scale-95" 
+                        onClick={() => {
+                           navigator.clipboard.writeText(tag);
+                           toast.success(`Copied ${tag} to clipboard`);
+                        }}
+                     >
+                        {tag}
+                     </span>
+                  ))}
+               </div>
+               <p className="text-[9px] text-muted-foreground mt-3 font-medium italic">Click any tag above to copy it, then paste it into your subject or content.</p>
             </div>
             <button onClick={handleCreateTemplate} className="w-full py-4 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest">
                {editingTemplate ? "UPDATE TEMPLATE" : "SAVE TEMPLATE"}

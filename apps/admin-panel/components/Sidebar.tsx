@@ -122,6 +122,7 @@ export default function Sidebar() {
   const automationItems = [
     ...(!isModuleDisabled('automations') && hasPermission('marketing:view') ? [
       { name: 'Campaigns', href: '/dashboard/automation/campaigns', icon: Zap },
+      { name: 'History', href: '/dashboard/automation/history', icon: History },
     ] : []),
   ];
 

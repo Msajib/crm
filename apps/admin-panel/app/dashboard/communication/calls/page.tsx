@@ -51,7 +51,7 @@ export default function CommunicationCalls() {
       <div className="animate-fade-in space-y-10">
         <header className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-black text-foreground mb-2">Voice & Dialer</h1>
+            <h1 className="text-2xl font-black text-foreground mb-2">Voice & Dialer</h1>
             <p className="text-muted-foreground">Manage business calls and review voice recording transcripts.</p>
           </div>
           <button 

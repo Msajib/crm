@@ -256,17 +256,10 @@ export class AIService {
   }
 
   private getMockScores() {
-    return [
-      { name: 'Sarah Jenkins', score: 98 },
-      { name: 'Michael Chen', score: 82 },
-      { name: 'Global Net', score: 45 },
-    ];
+    return [];
   }
 
   private getMockRecommendations() {
-    return [
-      { title: 'Schedule Demo', description: 'Acme Corp deal health is high but demo is missing.' },
-      { title: 'Re-engage Lead', description: "Michael Chen hasn't opened last 2 emails." },
-    ];
+    return [];
   }
 }

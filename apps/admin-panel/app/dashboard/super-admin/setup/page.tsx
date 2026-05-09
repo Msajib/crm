@@ -38,7 +38,7 @@ export default function SetupWizard() {
     <DashboardLayout>
       <div className="animate-fade-in max-w-4xl mx-auto py-10">
         <header className="text-center mb-16">
-           <h1 className="text-4xl font-black text-foreground mb-4 text-gradient">System Setup Wizard</h1>
+           <h1 className="text-2xl font-black text-foreground mb-4 text-gradient">System Setup Wizard</h1>
            <p className="text-muted-foreground">Follow these 4 steps to deploy your CRM instance for production.</p>
         </header>
 
@@ -74,7 +74,7 @@ export default function SetupWizard() {
                      <Zap className="w-8 h-8" />}
                  </div>
                  <div>
-                    <h2 className="text-2xl font-black text-foreground">{steps[step-1].title}</h2>
+                    <h2 className="text-xl font-black text-foreground">{steps[step-1].title}</h2>
                     <p className="text-sm text-muted-foreground">{steps[step-1].desc}</p>
                  </div>
               </div>

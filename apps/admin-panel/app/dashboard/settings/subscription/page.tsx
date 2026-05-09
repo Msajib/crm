@@ -53,7 +53,7 @@ export default function SubscriptionPage() {
     <DashboardLayout>
       <div className="animate-fade-in space-y-12">
         <header>
-          <h1 className="text-4xl font-black text-foreground mb-2 text-gradient">Subscription & Billing</h1>
+          <h1 className="text-2xl font-black text-foreground mb-2 text-gradient">Subscription & Billing</h1>
           <p className="text-muted-foreground font-medium italic">Manage your workspace capacity and billing details.</p>
         </header>
 
@@ -66,7 +66,7 @@ export default function SubscriptionPage() {
                 </div>
               )}
               
-              <h2 className="text-2xl font-black text-foreground mb-1">{plan.name}</h2>
+              <h2 className="text-xl font-black text-foreground mb-1">{plan.name}</h2>
               <p className="text-xs text-muted-foreground font-medium mb-6">{plan.description}</p>
               
               <div className="flex items-end gap-1 mb-8">
@@ -96,7 +96,7 @@ export default function SubscriptionPage() {
               <CreditCard className="w-8 h-8 text-muted-foreground" />
             </div>
             <div>
-              <h3 className="text-xl font-black text-foreground">Payment Method</h3>
+              <h3 className="text-base font-black text-foreground">Payment Method</h3>
               <p className="text-xs text-muted-foreground font-medium">Visa ending in 4242 • Expires 12/28</p>
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function SubscriptionPage() {
 
         <section className="space-y-6 pb-20">
            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-foreground">Billing History</h2>
+              <h2 className="text-xl font-black text-foreground">Billing History</h2>
               <button onClick={() => window.print()} className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Download All Receipts</button>
            </div>
            <div className="glass-premium rounded-[40px] border border-border overflow-hidden premium-shadow">

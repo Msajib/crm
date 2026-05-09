@@ -27,7 +27,7 @@ export default function CustomDomainSettings() {
     <DashboardLayout>
       <div className="animate-fade-in">
         <header className="mb-10">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Custom Domain</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Custom Domain</h1>
           <p className="text-muted-foreground">Connect your own domain to provide a white-labeled experience for your clients.</p>
         </header>
 
@@ -37,7 +37,7 @@ export default function CustomDomainSettings() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-primary font-semibold mb-1">Your Subdomain</p>
-                <h2 className="text-2xl font-mono text-foreground">acme-corp.crmplatform.com</h2>
+                <h2 className="text-xl font-mono text-foreground">acme-corp.crmplatform.com</h2>
               </div>
               <div className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-full text-xs font-bold border border-emerald-500/30">
                 ACTIVE
@@ -47,7 +47,7 @@ export default function CustomDomainSettings() {
 
           {/* Custom Domain Form */}
           <section className="glass-premium border border-border rounded-3xl p-8 shadow-2xl">
-            <h3 className="text-xl font-semibold mb-6 text-foreground">Connect Custom Domain</h3>
+            <h3 className="text-base font-semibold mb-6 text-foreground">Connect Custom Domain</h3>
             
             <div className="space-y-6">
               <div className="flex space-x-4">

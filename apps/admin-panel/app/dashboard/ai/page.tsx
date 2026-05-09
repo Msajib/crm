@@ -127,7 +127,7 @@ function AIContent() {
       <div className="animate-fade-in flex flex-col h-[calc(100vh-160px)]">
         <header className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-black text-foreground mb-2 text-gradient flex items-center tracking-tight">
+            <h1 className="text-2xl font-black text-foreground mb-2 text-gradient flex items-center tracking-tight">
               <Sparkles className="w-8 h-8 mr-3 text-primary animate-pulse" />
               AI Sales Agent
             </h1>
@@ -246,7 +246,7 @@ function AIContent() {
             <div className="lg:col-span-4 space-y-8 overflow-y-auto scrollbar-hide">
               <div className="flex justify-between items-end">
                 <div>
-                   <h2 className="text-2xl font-black text-foreground tracking-tight">Enterprise Knowledge Base</h2>
+                   <h2 className="text-xl font-black text-foreground tracking-tight">Enterprise Knowledge Base</h2>
                    <p className="text-muted-foreground text-sm font-medium italic mt-1">Upload SOPs, Product Specs, and Company Policies to train your Agent.</p>
                 </div>
                  <button 
@@ -277,7 +277,7 @@ function AIContent() {
                      <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6">
                         <Database className="w-10 h-10 text-muted-foreground" />
                      </div>
-                     <h3 className="text-xl font-bold text-foreground mb-2">No Training Data Found</h3>
+                     <h3 className="text-base font-bold text-foreground mb-2">No Training Data Found</h3>
                      <p className="text-muted-foreground text-sm max-w-sm mx-auto">Your AI Agent is currently using default industry models. Upload documents to make it smarter.</p>
                   </div>
                 )}
@@ -293,7 +293,7 @@ function AIContent() {
           <div className="glass-premium w-full max-w-2xl rounded-[50px] border border-border p-12 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-10">
                <div>
-                  <h2 className="text-3xl font-black text-foreground tracking-tight">Train AI Agent</h2>
+                  <h2 className="text-xl font-black text-foreground tracking-tight">Train AI Agent</h2>
                   <p className="text-sm text-muted-foreground mt-2 font-medium">Input document content to provide specific business context.</p>
                </div>
                 <button onClick={() => setShowAddKnowledge(false)} className="p-4 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>

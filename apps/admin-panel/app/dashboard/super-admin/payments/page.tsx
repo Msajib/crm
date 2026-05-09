@@ -66,7 +66,7 @@ export default function PaymentHistoryPage() {
       <div className="animate-fade-in space-y-10">
         <header className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-black text-foreground mb-2 text-gradient">Payment History</h1>
+            <h1 className="text-2xl font-black text-foreground mb-2 text-gradient">Payment History</h1>
             <p className="text-muted-foreground">Global overview of all tenant subscription purchases and attempts.</p>
           </div>
           <div className="flex items-center space-x-3">

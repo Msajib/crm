@@ -58,7 +58,7 @@ export default function CommunicationEmails() {
            <div className="w-20 h-20 bg-amber-500/10 rounded-3xl flex items-center justify-center mb-6 text-amber-500">
               <AlertCircle className="w-10 h-10" />
            </div>
-           <h1 className="text-3xl font-black text-foreground mb-4 tracking-tight">Email System Not Configured</h1>
+           <h1 className="text-2xl font-black text-foreground mb-4 tracking-tight">Email System Not Configured</h1>
            <p className="text-muted-foreground max-w-md mx-auto mb-10 leading-relaxed">
              You haven't connected an SMTP server yet. To send and receive business emails, please complete the system setup.
            </p>
@@ -81,7 +81,7 @@ export default function CommunicationEmails() {
       <div className="animate-fade-in h-[calc(100vh-160px)] flex flex-col">
         <header className="flex justify-between items-center mb-8">
            <div>
-              <h1 className="text-3xl font-black text-foreground mb-1 tracking-tight">Business Inbox</h1>
+              <h1 className="text-2xl font-black text-foreground mb-1 tracking-tight">Business Inbox</h1>
               <p className="text-muted-foreground text-sm font-medium italic">Connected via SMTP. Monitoring all outbound lead communications.</p>
            </div>
            <div className="flex space-x-4">

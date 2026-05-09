@@ -231,7 +231,7 @@ export default function SocialMarketing() {
       <div className="animate-fade-in space-y-10 max-w-7xl mx-auto">
         <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black text-foreground tracking-tight">Social Ecosystem</h1>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">Social Ecosystem</h1>
             <p className="text-muted-foreground text-sm font-medium max-w-2xl">Connect your global brand pages and unify your marketing reach across all channels.</p>
           </div>
           <div className="flex items-center gap-3">
@@ -315,7 +315,7 @@ export default function SocialMarketing() {
                    <Share2 className="w-7 h-7" />
                 </div>
                 <div>
-                   <h2 className="text-2xl font-black text-foreground mb-1">Omni-Channel Publishing</h2>
+                   <h2 className="text-xl font-black text-foreground mb-1">Omni-Channel Publishing</h2>
                    <p className="text-muted-foreground text-xs max-w-xl font-medium leading-relaxed italic">
                      Distribute your creative content and updates across all linked ecosystems with a single unified workflow.
                    </p>

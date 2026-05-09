@@ -140,7 +140,7 @@ export default function LeadDetailPage() {
                 {lead.firstName?.[0]}{lead.lastName?.[0]}
               </div>
               <div>
-                <h1 className="text-3xl font-black text-foreground tracking-tight">{lead.firstName} {lead.lastName}</h1>
+                <h1 className="text-2xl font-black text-foreground tracking-tight">{lead.firstName} {lead.lastName}</h1>
                 <div className="flex items-center space-x-3 mt-1">
                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                     lead.status === 'CONVERTED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'
@@ -328,7 +328,7 @@ export default function LeadDetailPage() {
         <div className="fixed inset-0 bg-background/95 backdrop-blur-xl z-[300] flex items-center justify-center p-4">
           <div className="glass-premium w-full max-w-xl rounded-[40px] border border-border p-8 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black">Convert to Deal</h2>
+              <h2 className="text-xl font-black">Convert to Deal</h2>
               <button onClick={() => setShowConvertModal(false)} className="p-2 hover:bg-muted rounded-xl"><X className="w-5 h-5" /></button>
             </div>
             

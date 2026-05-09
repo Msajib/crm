@@ -7,6 +7,7 @@ import UserNav from './UserNav';
 import NotificationCenter from './NotificationCenter';
 import GlobalSearch from './GlobalSearch';
 import MobileNav from './MobileNav';
+import TrialBanner from './TrialBanner';
 import { FeatureGatesProvider } from '@/hooks/useFeatureGates';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <UserNav />
             </div>
           </header>
+
+          {/* Trial Warning Banner */}
+          <TrialBanner />
 
           <div className="p-6 lg:p-10">
             {children}

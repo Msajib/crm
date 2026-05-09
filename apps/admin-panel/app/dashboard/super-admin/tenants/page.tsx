@@ -191,7 +191,7 @@ export default function SuperAdminTenants() {
       <div className="animate-fade-in space-y-10">
         <header className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-black text-foreground mb-2 text-gradient">Tenant Ecosystem</h1>
+            <h1 className="text-2xl font-black text-foreground mb-2 text-gradient">Tenant Ecosystem</h1>
             <p className="text-muted-foreground">Global oversight of all organizations, billing status, and system health.</p>
           </div>
           <div className="flex items-center space-x-3">
@@ -368,7 +368,7 @@ export default function SuperAdminTenants() {
               <div className="flex items-center space-x-6 p-6 bg-muted/50 rounded-[32px] border border-border">
                 <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center text-primary text-3xl font-black">{showViewModal.name.charAt(0)}</div>
                 <div>
-                   <h3 className="text-xl font-black">{showViewModal.name}</h3>
+                   <h3 className="text-base font-black">{showViewModal.name}</h3>
                    <p className="text-muted-foreground text-sm">@{showViewModal.slug}</p>
                 </div>
               </div>
@@ -389,7 +389,7 @@ export default function SuperAdminTenants() {
               <div className="w-20 h-20 bg-amber-500/10 text-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
                  <AlertTriangle className="w-10 h-10" />
               </div>
-              <h2 className="text-2xl font-black mb-2">Switch Context?</h2>
+              <h2 className="text-xl font-black mb-2">Switch Context?</h2>
               <p className="text-muted-foreground text-sm mb-8">You are about to login as the administrator of <strong>{showLoginConfirm.name}</strong>. Your current session will be temporarily switched.</p>
               <div className="flex flex-col space-y-3">
                  <button onClick={() => performLogin(showLoginConfirm)} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/25 hover:opacity-90 transition-all">Confirm & Switch</button>
@@ -459,7 +459,7 @@ function Modal({ title, children, onClose }: { title: string, children: React.Re
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
       <div className="glass-premium w-full max-w-2xl rounded-[40px] border border-border p-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden relative">
         <div className="flex justify-between items-center mb-8">
-           <h2 className="text-2xl font-black text-foreground">{title}</h2>
+           <h2 className="text-xl font-black text-foreground">{title}</h2>
            <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground"><X className="w-5 h-5" /></button>
         </div>
         <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-hide">

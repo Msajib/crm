@@ -3,23 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { 
-  Plus, 
   Zap, 
   Trash2, 
-  Play, 
   Users,
-  Calendar,
   FileText,
   Clock,
-  CheckCircle2,
   AlertCircle,
-  X,
-  Pause,
   BarChart3,
   Phone,
   MessageSquare,
   Smartphone,
-  ChevronRight
+  ChevronRight,
+  Eye,
+  Edit2,
+  X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
@@ -32,18 +29,30 @@ const CAMPAIGN_TYPES = [
   { id: 'WHATSAPP', label: 'WhatsApp', icon: Smartphone, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
 ];
 
+const EMPTY_FORM = {
+  name: '',
+  description: '',
+  templateId: '',
+  scheduledAt: '',
+  selectedLeadIds: [] as string[],
+};
+
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedType, setSelectedType] = useState('EMAIL');
   const [step, setStep] = useState(1);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
+  const [viewingCampaign, setViewingCampaign] = useState<any | null>(null);
 
   useEffect(() => {
     fetchData();
-    const timer = setInterval(fetchCampaigns, 10000); // Polling for updates
+    const timer = setInterval(fetchCampaigns, 10000);
     return () => clearInterval(timer);
   }, []);
 
@@ -54,7 +63,7 @@ export default function CampaignsPage() {
         api.get('/communications/templates').catch(() => []),
         api.get('/contacts').catch(() => ({ data: [] }))
       ]);
-      setCampaigns(Array.isArray(campData) ? campData : []);
+      setCampaigns(Array.isArray(campData) ? campData.filter(c => c.status === 'PENDING' || c.status === 'RUNNING') : []);
       setTemplates(Array.isArray(tplData) ? tplData : []);
       setLeads(Array.isArray(leadData?.data) ? leadData.data : []);
     } catch (err) {
@@ -67,39 +76,93 @@ export default function CampaignsPage() {
   const fetchCampaigns = async () => {
     try {
       const data = await api.get('/marketing/campaigns');
-      setCampaigns(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.log('Polling failed');
+      setCampaigns(Array.isArray(data) ? data.filter(c => c.status === 'PENDING' || c.status === 'RUNNING') : []);
+    } catch {
+      // silent polling failure
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const selectedLeadIds = Array.from(formData.getAll('leadIds'));
-    
-    const data = {
-      name: formData.get('name'),
-      description: formData.get('description'),
-      type: selectedType,
-      templateId: formData.get('templateId'),
-      leadIds: selectedLeadIds,
-      scheduledAt: formData.get('scheduledAt') || new Date().toISOString(),
-    };
+  const openEditor = (camp?: any) => {
+    if (camp && camp.id) {
+      setEditingCampaignId(camp.id);
+      setSelectedType(camp.type || 'EMAIL');
+      setForm({
+        name: camp.name,
+        description: camp.description || '',
+        templateId: camp.templateId || '',
+        scheduledAt: camp.scheduledAt ? new Date(camp.scheduledAt).toISOString().slice(0, 16) : '',
+        selectedLeadIds: camp.leadIds || [],
+      });
+    } else {
+      setEditingCampaignId(null);
+      setForm(EMPTY_FORM);
+      setSelectedType('EMAIL');
+    }
+    setStep(1);
+    setIsEditorOpen(true);
+  };
 
-    if (selectedLeadIds.length === 0) {
-      toast.error('Please select at least one lead');
+  const handleNext = () => {
+    if (step === 1) {
+      if (!form.name.trim()) {
+        toast.error('Please enter a campaign name');
+        return;
+      }
+    }
+    if (step === 3) {
+      if (form.selectedLeadIds.length === 0) {
+        toast.error('Please select at least one lead');
+        return;
+      }
+      handleSave();
       return;
     }
+    setStep(s => s + 1);
+  };
 
+  const handleSave = async () => {
+    setIsSaving(true);
     try {
-      await api.post('/marketing/campaigns', data);
-      toast.success(`${selectedType} campaign scheduled`);
+      const payload = {
+        name: form.name,
+        description: form.description || undefined,
+        type: selectedType,
+        templateId: form.templateId || undefined,
+        leadIds: form.selectedLeadIds,
+        scheduledAt: form.scheduledAt ? new Date(form.scheduledAt).toISOString() : new Date().toISOString(),
+      };
+      
+      if (editingCampaignId) {
+        await api.put(`/marketing/campaigns/${editingCampaignId}`, payload);
+        toast.success(`${selectedType} campaign updated successfully!`);
+      } else {
+        await api.post('/marketing/campaigns', payload);
+        toast.success(`${selectedType} campaign scheduled successfully!`);
+      }
       setIsEditorOpen(false);
       fetchCampaigns();
-    } catch (err) {
-      toast.error('Scheduling failed');
+    } catch (err: any) {
+      const msg = err?.message || 'Scheduling failed';
+      toast.error(msg);
+      console.error('Campaign create error:', err);
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const toggleLead = (leadId: string) => {
+    setForm(f => ({
+      ...f,
+      selectedLeadIds: f.selectedLeadIds.includes(leadId)
+        ? f.selectedLeadIds.filter(id => id !== leadId)
+        : [...f.selectedLeadIds, leadId],
+    }));
+  };
+
+  const toggleAllLeads = () => {
+    const allIds = leads.map(l => l.id);
+    const allSelected = allIds.every(id => form.selectedLeadIds.includes(id));
+    setForm(f => ({ ...f, selectedLeadIds: allSelected ? [] : allIds }));
   };
 
   const handleDelete = async (id: string) => {
@@ -108,7 +171,7 @@ export default function CampaignsPage() {
       await api.delete(`/marketing/campaigns/${id}`);
       toast.success('Campaign removed');
       fetchCampaigns();
-    } catch (err) {
+    } catch {
       toast.error('Action failed');
     }
   };
@@ -118,11 +181,11 @@ export default function CampaignsPage() {
       <div className="animate-fade-in flex flex-col h-[calc(100vh-160px)]">
         <header className="flex justify-between items-center mb-8">
            <div>
-              <h1 className="text-3xl font-black text-foreground mb-1 tracking-tight">Automation Engine</h1>
+              <h1 className="text-2xl font-black text-foreground mb-1 tracking-tight">Automation Engine</h1>
               <p className="text-muted-foreground text-sm font-medium italic">Omnichannel lead engagement: Email, SMS, Calls, and WhatsApp.</p>
            </div>
            <button 
-             onClick={() => setIsEditorOpen(true)}
+             onClick={() => openEditor()}
              className="bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-black flex items-center space-x-3 hover:opacity-90 transition-all shadow-xl shadow-primary/25 active:scale-95"
            >
               <Zap className="w-5 h-5 fill-current" />
@@ -141,10 +204,10 @@ export default function CampaignsPage() {
                 <div className="w-24 h-24 bg-muted rounded-[40px] flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform">
                    <Zap className="w-12 h-12 text-muted-foreground/30" />
                 </div>
-                <h3 className="text-2xl font-black text-foreground mb-3">No Active Campaigns</h3>
+                <h3 className="text-lg font-black text-foreground mb-3">No Active Campaigns</h3>
                 <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-10 font-medium leading-relaxed">Engage your database automatically. Start with an email sequence or an automated call campaign.</p>
                 <button 
-                  onClick={() => setIsEditorOpen(true)}
+                  onClick={() => openEditor()}
                   className="bg-primary/10 text-primary px-10 py-4 rounded-2xl font-black hover:bg-primary hover:text-white transition-all shadow-lg"
                 >
                    Launch First Campaign
@@ -167,7 +230,7 @@ export default function CampaignsPage() {
                       </div>
                       <div>
                          <div className="flex items-center space-x-4">
-                            <h3 className="text-2xl font-black text-foreground tracking-tight">{camp.name}</h3>
+                            <h3 className="text-lg font-black text-foreground tracking-tight">{camp.name}</h3>
                             <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border ${
                               camp.status === 'RUNNING' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
                               camp.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
@@ -205,9 +268,19 @@ export default function CampaignsPage() {
                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Execution Date</p>
                          <p className="text-xs font-bold text-foreground">{new Date(camp.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
                       </div>
-                      <button onClick={() => handleDelete(camp.id)} className="p-5 hover:bg-destructive/10 rounded-3xl transition-all text-destructive group-hover:scale-110">
-                         <Trash2 className="w-6 h-6" />
-                      </button>
+                      <div className="flex space-x-2">
+                         <button onClick={() => setViewingCampaign(camp)} className="p-3 hover:bg-primary/10 rounded-2xl transition-all text-primary group-hover:scale-110" title="View Details">
+                            <Eye className="w-5 h-5" />
+                         </button>
+                         {camp.status === 'PENDING' && (
+                           <button onClick={() => openEditor(camp)} className="p-3 hover:bg-emerald-500/10 rounded-2xl transition-all text-emerald-500 group-hover:scale-110" title="Edit Campaign">
+                              <Edit2 className="w-5 h-5" />
+                           </button>
+                         )}
+                         <button onClick={() => handleDelete(camp.id)} className="p-3 hover:bg-destructive/10 rounded-2xl transition-all text-destructive group-hover:scale-110" title="Delete Campaign">
+                            <Trash2 className="w-5 h-5" />
+                         </button>
+                      </div>
                    </div>
                 </div>
 
@@ -241,7 +314,7 @@ export default function CampaignsPage() {
         isOpen={isEditorOpen}
         onClose={() => { setIsEditorOpen(false); setStep(1); }}
         title="Campaign Engine"
-        subtitle={step === 1 ? "Step 1: Identity & Channel" : step === 2 ? "Step 2: Creative Assets" : "Step 3: Target Audience"}
+        subtitle={step === 1 ? 'Step 1: Identity & Channel' : step === 2 ? 'Step 2: Creative Assets' : 'Step 3: Target Audience'}
         maxWidth="max-w-4xl"
         footer={(
           <div className="flex justify-between items-center w-full">
@@ -253,48 +326,51 @@ export default function CampaignsPage() {
             <div className="flex gap-4">
               {step > 1 && (
                 <button 
-                  onClick={() => setStep(step - 1)}
+                  onClick={() => setStep(s => s - 1)}
                   className="px-8 py-4 bg-muted text-foreground rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-muted/80 transition-all border border-border"
                 >
                   Back
                 </button>
               )}
-              {step < 3 ? (
-                <button 
-                  onClick={() => {
-                    if (step === 1) {
-                      const name = (document.getElementsByName('name')[0] as HTMLInputElement).value;
-                      if (!name) { toast.error('Please enter a campaign name'); return; }
-                    }
-                    setStep(step + 1);
-                  }}
-                  className="px-10 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-                >
-                  Continue <ChevronRight className="w-4 h-4" />
-                </button>
-              ) : (
-                <button 
-                  onClick={() => (document.getElementById('campaign-form') as HTMLFormElement)?.requestSubmit()}
-                  className="px-10 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-                >
-                  <Zap className="w-4 h-4 fill-current" /> Initialize Engine
-                </button>
-              )}
+              <button 
+                onClick={handleNext}
+                disabled={isSaving}
+                className="px-10 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {isSaving ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
+                ) : step < 3 ? (
+                  <>Continue <ChevronRight className="w-4 h-4" /></>
+                ) : (
+                  <><Zap className="w-4 h-4 fill-current" /> Initialize Engine</>
+                )}
+              </button>
             </div>
           </div>
         )}
       >
-        <form id="campaign-form" onSubmit={handleSave} className="space-y-10">
+        <div className="space-y-10">
+          {/* ── Step 1 ── */}
           {step === 1 && (
             <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
                <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-3 col-span-2 lg:col-span-1">
                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Campaign Identity</label>
-                     <input name="name" required className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" placeholder="e.g. Winter Sales Blast" />
+                     <input 
+                       value={form.name}
+                       onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                       className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" 
+                       placeholder="e.g. Winter Sales Blast" 
+                     />
                   </div>
                   <div className="space-y-3 col-span-2 lg:col-span-1">
                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Launch Schedule</label>
-                     <input name="scheduledAt" type="datetime-local" className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" />
+                     <input 
+                       type="datetime-local" 
+                       value={form.scheduledAt}
+                       onChange={e => setForm(f => ({ ...f, scheduledAt: e.target.value }))}
+                       className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner" 
+                     />
                   </div>
                </div>
 
@@ -325,13 +401,18 @@ export default function CampaignsPage() {
             </div>
           )}
 
+          {/* ── Step 2 ── */}
           {step === 2 && (
             <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
                <div className="space-y-3">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Creative Asset / Template</label>
                   <div className="relative">
-                     <select name="templateId" required className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-6 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner appearance-none">
-                        <option value="">Select an asset for {selectedType} channel...</option>
+                     <select 
+                       value={form.templateId}
+                       onChange={e => setForm(f => ({ ...f, templateId: e.target.value }))}
+                       className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-6 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner appearance-none"
+                     >
+                        <option value="">Select an asset for {selectedType} channel... (optional)</option>
                         {templates.filter(t => t.type === selectedType || !t.type).map(t => (
                           <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
@@ -343,11 +424,18 @@ export default function CampaignsPage() {
 
                <div className="space-y-3">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-2">Internal Brief</label>
-                  <textarea name="description" rows={4} className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner resize-none" placeholder="What is the strategic objective of this campaign?" />
+                  <textarea 
+                    value={form.description}
+                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                    rows={4} 
+                    className="w-full bg-muted/40 border-2 border-border/50 rounded-3xl px-8 py-5 text-sm font-bold text-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all shadow-inner resize-none" 
+                    placeholder="What is the strategic objective of this campaign?" 
+                  />
                </div>
             </div>
           )}
 
+          {/* ── Step 3 ── */}
           {step === 3 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                <div className="flex justify-between items-center px-2">
@@ -355,26 +443,27 @@ export default function CampaignsPage() {
                      <Users className="w-5 h-5 text-primary" />
                      <div>
                         <h4 className="text-sm font-black text-foreground">Target Audience</h4>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{leads.length} Records Available</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{leads.length} Records Available • {form.selectedLeadIds.length} Selected</p>
                      </div>
                   </div>
                   <button 
                     type="button" 
-                    onClick={() => {
-                      const checkboxes = document.getElementsByName('leadIds') as NodeListOf<HTMLInputElement>;
-                      const allChecked = Array.from(checkboxes).every(c => c.checked);
-                      checkboxes.forEach(c => c.checked = !allChecked);
-                    }}
+                    onClick={toggleAllLeads}
                     className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest"
                   >
-                    Toggle Select All
+                    {leads.every(l => form.selectedLeadIds.includes(l.id)) ? 'Deselect All' : 'Select All'}
                   </button>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-4 bg-muted/20 rounded-[40px] border border-border scrollbar-hide shadow-inner">
                   {leads.map(lead => (
                     <label key={lead.id} className="flex items-center p-5 bg-card border border-border/60 rounded-[24px] cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all group relative overflow-hidden">
-                       <input type="checkbox" name="leadIds" value={lead.id} defaultChecked className="w-5 h-5 rounded-lg border-2 border-border text-primary focus:ring-primary transition-all mr-5" />
+                       <input 
+                         type="checkbox" 
+                         checked={form.selectedLeadIds.includes(lead.id)}
+                         onChange={() => toggleLead(lead.id)}
+                         className="w-5 h-5 rounded-lg border-2 border-border text-primary focus:ring-primary transition-all mr-5" 
+                       />
                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-black text-foreground truncate">{lead.firstName} {lead.lastName}</p>
                           <p className="text-[10px] text-muted-foreground font-medium truncate">{lead.email || lead.phone || 'No direct contact'}</p>
@@ -387,14 +476,86 @@ export default function CampaignsPage() {
                <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6 flex items-start gap-4">
                   <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <p className="text-xs text-primary/80 leading-relaxed font-medium">
-                    You are about to launch a <strong>{selectedType}</strong> campaign. Ensure your credentials are valid in settings before proceeding. 
+                    You are about to launch a <strong>{selectedType}</strong> campaign to <strong>{form.selectedLeadIds.length}</strong> recipient(s). Ensure your credentials are valid in settings before proceeding.
                     The processing engine will start immediately after confirmation.
                   </p>
                </div>
             </div>
           )}
-        </form>
+        </div>
       </PremiumModal>
+
+      {/* Campaign Details Modal */}
+      {viewingCampaign && (
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-xl z-[300] flex items-center justify-center p-4">
+           <div className="glass-premium w-full max-w-4xl max-h-[85vh] rounded-[50px] border border-border flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center p-10 border-b border-border/50 shrink-0">
+                 <div>
+                    <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-4">
+                      {viewingCampaign.name}
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                        viewingCampaign.status === 'RUNNING' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                        viewingCampaign.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                        viewingCampaign.status === 'FAILED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                        'bg-primary/10 text-primary border-primary/20'
+                      }`}>
+                         {viewingCampaign.status}
+                      </span>
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-2 font-medium italic">Targeted Audience & Delivery Status</p>
+                 </div>
+                 <button onClick={() => setViewingCampaign(null)} className="p-4 hover:bg-muted rounded-2xl transition-all text-muted-foreground"><X className="w-6 h-6" /></button>
+              </div>
+
+              <div className="p-10 flex-1 overflow-y-auto custom-scrollbar bg-muted/10 rounded-b-[50px]">
+                 <div className="grid grid-cols-3 gap-6 mb-8">
+                    <div className="p-6 bg-card border border-border rounded-3xl text-center shadow-inner">
+                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Recipients</p>
+                       <p className="text-3xl font-black text-foreground">{viewingCampaign.leadIds?.length || 0}</p>
+                    </div>
+                    <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-3xl text-center shadow-inner">
+                       <p className="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest mb-1">Delivered</p>
+                       <p className="text-3xl font-black text-emerald-500">{viewingCampaign.processedCount || 0}</p>
+                    </div>
+                    <div className="p-6 bg-destructive/5 border border-destructive/20 rounded-3xl text-center shadow-inner">
+                       <p className="text-[10px] font-black text-destructive/70 uppercase tracking-widest mb-1">Failed</p>
+                       <p className="text-3xl font-black text-destructive">{viewingCampaign.failedCount || 0}</p>
+                    </div>
+                 </div>
+
+                 <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-4 ml-2">Recipient List</h3>
+                 <div className="space-y-3">
+                    {viewingCampaign.leadIds?.map((id: string) => {
+                      const lead = leads.find(l => l.id === id);
+                      return (
+                        <div key={id} className="flex items-center justify-between p-5 bg-card border border-border rounded-2xl">
+                           <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-black">
+                                 {lead ? `${lead.firstName?.[0] || ''}${lead.lastName?.[0] || ''}` : '?'}
+                              </div>
+                              <div>
+                                 <p className="text-sm font-black text-foreground">{lead ? `${lead.firstName} ${lead.lastName}` : 'Unknown Lead'}</p>
+                                 <p className="text-[10px] text-muted-foreground font-medium">{lead?.email || lead?.phone || id}</p>
+                              </div>
+                           </div>
+                           <div className="text-right">
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${
+                                viewingCampaign.status === 'COMPLETED' ? 'text-emerald-500' : viewingCampaign.status === 'FAILED' ? 'text-destructive' : 'text-amber-500'
+                              }`}>
+                                 {viewingCampaign.status === 'COMPLETED' ? 'Processed' : viewingCampaign.status === 'FAILED' ? 'Failed' : 'Pending'}
+                              </span>
+                           </div>
+                        </div>
+                      );
+                    })}
+                    {(!viewingCampaign.leadIds || viewingCampaign.leadIds.length === 0) && (
+                      <div className="p-10 text-center text-muted-foreground font-medium italic">No recipients found.</div>
+                    )}
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

@@ -18,10 +18,10 @@ import { api } from '@/lib/api';
 import ModuleGuard from '@/components/ModuleGuard';
 
 const STATS = [
-  { label: 'Total Reach', value: '1.2M', trend: '+14.5%', sub: 'Last 30 days' },
-  { label: 'Engagement Rate', value: '4.8%', trend: '+0.2%', sub: 'Avg per post' },
-  { label: 'Ad Conversion', value: '12.3%', trend: '+3.1%', sub: 'ROAS 4.2x' },
-  { label: 'Page Boosts', value: '24', trend: '-2', sub: 'Active campaigns' },
+  { label: 'Total Reach', value: '0', trend: '0%', sub: 'No data' },
+  { label: 'Engagement Rate', value: '0%', trend: '0%', sub: 'No data' },
+  { label: 'Ad Conversion', value: '0%', trend: '0%', sub: 'No data' },
+  { label: 'Page Boosts', value: '0', trend: '0', sub: 'No data' },
 ];
 
 export default function MarketingStats() {
@@ -76,7 +76,7 @@ function StatsContent() {
       <div className="animate-fade-in space-y-10 pb-20">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <h1 className="text-3xl font-black text-foreground mb-2 text-gradient">Performance Insights</h1>
+            <h1 className="text-2xl font-black text-foreground mb-2 text-gradient">Performance Insights</h1>
             <p className="text-muted-foreground text-sm">Real-time KPIs, conversion funnels, and revenue forecasting.</p>
           </div>
           <div className="flex items-center space-x-3">
@@ -101,7 +101,7 @@ function StatsContent() {
             <div key={stat.label} className="glass-premium p-6 rounded-3xl border border-border premium-shadow">
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">{stat.label}</p>
               <div className="flex items-end justify-between">
-                <h3 className="text-3xl font-black text-foreground">{stat.value}</h3>
+                <h3 className="text-lg font-black text-foreground">{stat.value}</h3>
                 <span className={`text-xs font-black px-2 py-1 rounded-lg ${stat.trend.startsWith('+') ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
                   {stat.trend}
                 </span>
@@ -136,12 +136,11 @@ function StatsContent() {
                  {stats.length > 0 ? stats.map((s: any) => (
                     <ChannelItem key={s.platform} name={s.platform} value={(Number(s.engagement) || 0) * 10} color={s.platform === 'FACEBOOK' ? 'bg-blue-600' : 'bg-indigo-600'} />
                  )) : (
-                    <>
-                      <ChannelItem name="Facebook Ads" value={65} color="bg-blue-600" />
-                      <ChannelItem name="Google Search" value={42} color="bg-emerald-500" />
-                      <ChannelItem name="Instagram Reels" value={88} color="bg-pink-600" />
-                      <ChannelItem name="Direct Email" value={28} color="bg-amber-500" />
-                    </>
+                    <div className="flex flex-col items-center justify-center py-10 opacity-50">
+                       <Share2 className="w-12 h-12 mb-4" />
+                       <p className="text-sm font-bold">No connected accounts</p>
+                       <p className="text-[10px] uppercase tracking-widest mt-1">Configure social integrations to see data.</p>
+                    </div>
                  )}
               </div>
               <button className="mt-10 w-full py-5 bg-muted border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-accent transition-all flex items-center justify-center space-x-2">
